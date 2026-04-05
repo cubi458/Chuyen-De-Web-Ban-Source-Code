@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "sender": "BOT",
+    "text": "Xin chào! Mình có thể giúp gì cho bạn không?",
+    "delay": 0,
+    "typing": 200
+  },
+  {
+    "id": 2,
+    "sender": "BOT",
+    "text": "Nếu có bất kỳ khiếu nại hay thắc mắc nào, xin vui lòng liên hệ với chúng tôi qua số điện thoại 0 363 363 636, xin cảm ơn",
+    "delay": 50,
+    "typing": 220
+  }
+]

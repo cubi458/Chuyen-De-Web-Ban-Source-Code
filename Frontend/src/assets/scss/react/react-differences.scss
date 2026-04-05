@@ -1,0 +1,247 @@
+// Plugins CSS
+@import "plugins/plugin-nouislider";
+@import "plugins/plugin-react-datetime";
+
+// Core CSS
+@import "now-ui-kit/misc";
+@import "now-ui-kit/typography";
+
+// components
+@import "now-ui-kit/dropdowns";
+@import "now-ui-kit/modals";
+@import "now-ui-kit/popovers";
+@import "now-ui-kit/tooltips";
+
+// example pages and sections
+@import "now-ui-kit/sections";
+
+
+@import "now-ui-kit/responsive";
+
+// Store specific overrides
+.auth-page {
+	margin: 0;
+	padding: 0;
+}
+
+.hero-filter-row {
+	background: rgba(6, 9, 20, 0.6);
+	border-radius: 40px;
+	padding: 18px 24px;
+	backdrop-filter: blur(6px);
+	margin: 0 auto;
+	max-width: 1024px;
+	row-gap: 12px;
+}
+
+.hero-filter-control {
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.35);
+	color: #fff;
+}
+
+.hero-filter-control:focus {
+	box-shadow: none;
+	outline: none;
+	border-color: rgba(0, 188, 212, 0.6);
+}
+
+.hero-filter-control::placeholder {
+	color: rgba(255, 255, 255, 0.8);
+}
+
+.hero-filter-control option {
+	color: #111;
+	background: #fff;
+}
+
+.featured-heading {
+	color: #0c0c0c;
+	font-weight: 700;
+	letter-spacing: -0.3px;
+	padding-top: 0;
+	margin-bottom: 8px;
+}
+
+.featured-header {
+	gap: 12px;
+}
+
+.featured-header .category {
+	margin-top: 0 !important;
+	font-weight: 500;
+}
+
+.hero-filter-row .hero-filter-col--price {
+	flex: 0 0 180px;
+	max-width: 230px;
+}
+
+@media (max-width: 767.98px) {
+	.hero-filter-row .hero-filter-col--price {
+		flex: 1 1 100%;
+		max-width: 100%;
+	}
+}
+
+.sticky-feedback {
+	position: fixed;
+	top: 86px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 1050;
+	width: min(92vw, 420px);
+	box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+	border-radius: 12px;
+}
+
+@media (max-width: 767.98px) {
+	.sticky-feedback {
+		top: 72px;
+	}
+}
+
+.category-carousel-wrapper {
+	position: relative;
+	padding: 0 48px;
+}
+
+.category-carousel {
+	display: flex;
+	overflow-x: auto;
+	gap: 20px;
+	scroll-behavior: smooth;
+	scroll-snap-type: x proximity;
+	padding-bottom: 16px;
+	cursor: grab;
+	user-select: none;
+	-webkit-overflow-scrolling: touch;
+}
+
+.category-carousel:active {
+	cursor: grabbing;
+}
+
+.category-carousel.is-dragging {
+	cursor: grabbing;
+}
+
+.category-carousel::-webkit-scrollbar {
+	height: 6px;
+}
+
+.category-carousel::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.05);
+	border-radius: 3px;
+}
+
+.category-carousel::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.25);
+	border-radius: 3px;
+}
+
+.category-carousel-item {
+	flex: 0 0 270px;
+	scroll-snap-align: start;
+}
+
+.category-carousel-item .card-product {
+	min-height: 100%;
+}
+
+.carousel-nav {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	border-radius: 50%;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(255, 255, 255, 0.9) !important;
+	color: #1f2d3d !important;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+	z-index: 2;
+}
+
+.carousel-nav--prev {
+	left: 0;
+}
+
+.carousel-nav--next {
+	right: 0;
+}
+
+@media (max-width: 991.98px) {
+	.category-carousel-wrapper {
+		padding: 0 32px;
+	}
+
+	.category-carousel-item {
+		flex: 0 0 240px;
+	}
+}
+
+@media (max-width: 767.98px) {
+	.category-carousel-wrapper {
+		padding: 0;
+	}
+
+	.carousel-nav {
+		display: none;
+	}
+}
+
+.popular-category-card {
+	transition: box-shadow 0.2s ease, transform 0.2s ease;
+	cursor: pointer;
+}
+
+.popular-category-card:hover,
+.popular-category-card:focus-within {
+	transform: translateY(-4px);
+	box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
+	border-color: rgba(249, 99, 50, 0.4);
+}
+
+.popular-category-card--active {
+	border-color: #f96332;
+	box-shadow: 0 22px 40px rgba(249, 99, 50, 0.25);
+}
+
+.popular-category-card--active .icon,
+.popular-category-card:hover .icon {
+	background: linear-gradient(45deg, #ff8a5c, #f96332);
+	color: #fff;
+}
+
+.category-products-panel {
+	margin-top: 24px;
+	padding: 24px;
+	border-radius: 18px;
+	background: #fff;
+	box-shadow: 0 25px 55px rgba(17, 24, 39, 0.08);
+}
+
+.category-products-panel .category-product-grid {
+	margin-top: 12px;
+}
+
+.category-products-panel .card-product {
+	border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+@media (max-width: 767.98px) {
+	.category-products-panel {
+		padding: 16px;
+	}
+}
+
+.catalog-container {
+	width: 100%;
+	max-width: 100%;
+	padding-left: clamp(16px, 4vw, 60px);
+	padding-right: clamp(16px, 4vw, 60px);
+}

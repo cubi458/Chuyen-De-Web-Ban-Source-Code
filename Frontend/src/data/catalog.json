@@ -1,0 +1,481 @@
+{
+  "languageFilters": [
+    "Tất cả",
+    "PHP",
+    "JavaScript",
+    "TypeScript",
+    "Python",
+    "React Native"
+  ],
+  "priceFilters": [
+    { "id": "all", "label": "Mọi mức giá" },
+    { "id": "under50", "label": "Dưới $50" },
+    { "id": "50-100", "label": "$50 - $100" },
+    { "id": "100plus", "label": "Trên $100" }
+  ],
+  "projectTypes": [
+    "Tất cả",
+    "Ecommerce",
+    "Portal",
+    "Management",
+    "Utility",
+    "Food & Beverage",
+    "Generator",
+    "Landing"
+  ],
+  "categories": [
+    {
+      "id": "commerce",
+      "name": "Store & Ecommerce",
+      "description": "Website bán hàng, giỏ hàng đa ngành và chiến dịch flash sale.",
+      "icon": "now-ui-icons shopping_bag-16",
+      "color": "info",
+      "tags": ["Laravel", "Stripe", "Responsive"]
+    },
+    {
+      "id": "portal",
+      "name": "Portal & Directory",
+      "description": "Cổng thông tin, tuyển dụng, landing nhận lead đa lĩnh vực.",
+      "icon": "now-ui-icons business_chart-bar-32",
+      "color": "primary",
+      "tags": ["WordPress", "Laravel", "SEO"]
+    },
+    {
+      "id": "management",
+      "name": "Quản lý & Báo cáo",
+      "description": "Hệ thống nội bộ phục vụ quản trị đơn hàng, hóa đơn, báo cáo.",
+      "icon": "now-ui-icons business_bulb-63",
+      "color": "success",
+      "tags": ["Dashboard", "MySQL", "Exports"]
+    },
+    {
+      "id": "utility",
+      "name": "Công cụ & Automation",
+      "description": "Các tool QR, generator, workflow automation phục vụ marketing.",
+      "icon": "now-ui-icons tech_mobile",
+      "color": "warning",
+      "tags": ["Laravel", "API", "Realtime"]
+    },
+    {
+      "id": "food",
+      "name": "F&B Experience",
+      "description": "Bộ mã nguồn cho cửa hàng trà sữa, bakery, grocery kết hợp đặt lịch.",
+      "icon": "now-ui-icons shopping_shop",
+      "color": "danger",
+      "tags": ["POS", "Delivery", "Loyalty"]
+    },
+    {
+      "id": "ai",
+      "name": "Creative AI",
+      "description": "Ứng dụng tạo ảnh, avatar, prompt hỗ trợ dịch vụ sáng tạo.",
+      "icon": "now-ui-icons objects_spaceship",
+      "color": "default",
+      "tags": ["Next.js", "OpenAI", "Automation"]
+    }
+  ],
+  "products": [
+    {
+      "id": "rio-florist-commerce",
+      "title": "Rio Florist Commerce",
+      "summary": "Giao diện shop hoa trang nhã, cho phép đặt hoa theo gói và gift card.",
+      "coverImageKey": "source1",
+      "detailImageKeys": ["detail1", "detail2", "detail3", "detail4", "detail5", "detail6"],
+      "technologies": ["PHP", "MySQL", "Bootstrap 4", "Swiper"],
+      "price": 100,
+      "categoryId": "commerce",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Ecommerce",
+      "level": "professional",
+      "readmeHighlights": [
+        "Checklist cấu hình hosting cPanel",
+        "Hướng dẫn thêm combo quà tặng",
+        "Quy trình nhận đơn và gọi xác nhận"
+      ],
+      "includes": ["Full source code", "SQL seed data", "Email templates"],
+      "deliverables": ["Source code", "Database seed", "Deployment guide"]
+    },
+    {
+      "id": "joblink-career-portal",
+      "title": "JobLink Career Portal",
+      "summary": "Cổng đăng tuyển với trang ứng viên, duyệt hồ sơ và widget thống kê.",
+      "coverImageKey": "source2",
+      "detailImageKeys": ["detail4", "detail5", "detail6", "detail7", "detail8", "detail9"],
+      "videoUrl": "https://www.youtube.com/embed/f02mOEt11OQ",
+      "technologies": ["Laravel", "Blade", "MySQL", "Chart.js"],
+      "price": 350,
+      "categoryId": "portal",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Portal",
+      "level": "enterprise",
+      "readmeHighlights": [
+        "Thiết lập phân quyền nhà tuyển dụng",
+        "Cron đồng bộ việc làm nổi bật",
+        "Email template nhắc lịch phỏng vấn"
+      ],
+      "includes": ["Source + assets", "Sample data", "Docker compose"],
+      "deliverables": ["Source code", "Database seed", "Admin credentials"]
+    },
+    {
+      "id": "billing-manager-suite",
+      "title": "Billing Manager Suite",
+      "summary": "Dashboard quản lý hóa đơn điện nước với báo cáo tháng và xuất Excel.",
+      "coverImageKey": "source3",
+      "detailImageKeys": ["detail7", "detail8", "detail9", "detail10", "detail11", "detail12"],
+      "technologies": ["CodeIgniter", "MySQL", "Datatables", "SweetAlert2"],
+      "price": 59,
+      "categoryId": "management",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Management",
+      "level": "starter",
+      "readmeHighlights": [
+        "Chuẩn hóa bảng số liệu theo EVN",
+        "Hướng dẫn import file CSV",
+        "Tuỳ biến biểu phí bậc thang"
+      ],
+      "includes": ["Source", "Seed files", "Report templates"],
+      "deliverables": ["Source code", "SQL dump", "Usage guide"]
+    },
+    {
+      "id": "enterprise-newsroom",
+      "title": "Enterprise Newsroom",
+      "summary": "Portal tin tức doanh nghiệp với spotlight, RSS và workflow duyệt bài.",
+      "coverImageKey": "source4",
+      "detailImageKeys": ["detail10", "detail11", "detail12", "detail13", "detail14", "detail15"],
+      "technologies": ["WordPress", "ACF Pro", "ElasticSearch", "SCSS toolkit"],
+      "price": 249,
+      "categoryId": "portal",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Portal",
+      "level": "professional",
+      "readmeHighlights": [
+        "Flow duyệt bài ba bước",
+        "Tích hợp Azure CDN cho media",
+        "Chiến lược SEO onpage"
+      ],
+      "includes": ["Theme package", "Dummy content", "Deploy checklist"],
+      "deliverables": ["Theme files", "Database seed", "Documentation"]
+    },
+    {
+      "id": "qr-hub-utility",
+      "title": "QR Hub Utility",
+      "summary": "Tool tạo mã QR, lưu lịch sử quét và export Excel theo chiến dịch.",
+      "coverImageKey": "source5",
+      "detailImageKeys": ["detail13", "detail14", "detail15", "detail16", "detail17", "detail18"],
+      "technologies": ["Laravel", "Spatie Media", "Tailwind", "Livewire"],
+      "price": 40,
+      "categoryId": "utility",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Utility",
+      "level": "starter",
+      "readmeHighlights": [
+        "Cấu hình queue lưu lịch sử",
+        "Setup API rút gọn URL",
+        "Bảo vệ endpoint chia sẻ công khai"
+      ],
+      "includes": ["Source", "Migration files", "Sample env"],
+      "deliverables": ["Source code", "Database migrations", "API doc"]
+    },
+    {
+      "id": "neosport-sneaker-store",
+      "title": "Neosport Sneaker Store",
+      "summary": "Website bán giày, lọc theo size, voucher và trang admin cơ bản.",
+      "coverImageKey": "source6",
+      "detailImageKeys": ["detail16", "detail17", "detail18", "detail19", "detail20", "detail21"],
+      "technologies": ["PHP", "MySQL", "Bootstrap 5", "Slick Slider"],
+      "price": 95,
+      "categoryId": "commerce",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Ecommerce",
+      "level": "professional",
+      "readmeHighlights": [
+        "Tích hợp VNPay sandbox",
+        "Workflow duyệt đơn 2 bước",
+        "Module banner động dựa trên tồn kho"
+      ],
+      "includes": ["Source code", "SQL seed", "Illustrations"],
+      "deliverables": ["Source code", "DB seed", "Assets pack"]
+    },
+    {
+      "id": "athleisure-mall",
+      "title": "Athleisure Mall",
+      "summary": "Lookbook athleisure đa thương hiệu với landing chiến dịch và blog.",
+      "coverImageKey": "source7",
+      "detailImageKeys": ["detail19", "detail20", "detail21", "detail22", "detail23", "detail24"],
+      "technologies": ["Laravel", "Inertia", "Vue 3", "Redis cache"],
+      "price": 189,
+      "categoryId": "commerce",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Ecommerce",
+      "level": "professional",
+      "readmeHighlights": [
+        "Tuỳ chỉnh theme qua bảng màu",
+        "Import catalogue từ Excel",
+        "Queue gửi notification chiến dịch"
+      ],
+      "includes": ["Monorepo source", "Figma link", "Seed data"],
+      "deliverables": ["Source code", "Design kit", "Deployment scripts"]
+    },
+    {
+      "id": "habit-ai-generator",
+      "title": "Habit AI Generator",
+      "summary": "Web app tạo prompt và preview hình AI với trên 1000 preset.",
+      "coverImageKey": "source8",
+      "detailImageKeys": ["detail22", "detail23", "detail24", "detail25", "detail26", "detail27"],
+      "videoUrl": "https://www.youtube.com/embed/ysz5S6PUM-U",
+      "technologies": ["Next.js", "FastAPI", "OpenAI", "Supabase"],
+      "price": 199,
+      "categoryId": "ai",
+      "languages": ["TypeScript", "Python"],
+      "projectType": "Generator",
+      "level": "enterprise",
+      "readmeHighlights": [
+        "Quy trình tạo embeddings Supabase",
+        "Giới hạn chi phí API theo user",
+        "Tối ưu build Next.js serverless"
+      ],
+      "includes": ["Frontend source", "Backend service", "Prompt presets"],
+      "deliverables": ["Source code", "Infrastructure files", "Runbook"]
+    },
+    {
+      "id": "grocery-boutique-suite",
+      "title": "Grocery Boutique Suite",
+      "summary": "Website bán hoa - quà tặng kết hợp grocery với lịch giao nhanh.",
+      "coverImageKey": "souce9",
+      "detailImageKeys": ["detail25", "detail26", "detail27", "detail28", "detail29", "detail30"],
+      "technologies": ["PHP", "MySQL", "Blade", "Alpine.js"],
+      "price": 400,
+      "categoryId": "food",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Food & Beverage",
+      "level": "enterprise",
+      "readmeHighlights": [
+        "Tuỳ chỉnh phí ship theo quận",
+        "Gợi ý combo bán kèm",
+        "Thiết lập ưu đãi theo dịp"
+      ],
+      "includes": ["Source code", "Seeder", "Email templates"],
+      "deliverables": ["Source code", "SQL seed", "Guideline PDF"]
+    },
+    {
+      "id": "milktea-franchise-kit",
+      "title": "Milk Tea Franchise Kit",
+      "summary": "Template trà sữa đặt món trước, quản lý topping và báo cáo doanh thu.",
+      "coverImageKey": "source10",
+      "detailImageKeys": ["detail28", "detail29", "detail30", "detail31", "detail32", "detail33"],
+      "technologies": ["PHP", "MySQL", "Chart.js", "Sass"],
+      "price": 400,
+      "categoryId": "food",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Food & Beverage",
+      "level": "enterprise",
+      "readmeHighlights": [
+        "Cách thêm chi nhánh mới",
+        "Quy trình đóng băng đơn hàng",
+        "Báo cáo doanh thu theo khung giờ"
+      ],
+      "includes": ["Source", "Seed data", "Admin UI kit"],
+      "deliverables": ["Source code", "DB seed", "Ops checklist"]
+    },
+    {
+      "id": "urban-shoe-gallery",
+      "title": "Urban Shoe Gallery",
+      "summary": "Landing bộ sưu tập sneaker giới hạn với countdown và lookbook.",
+      "coverImageKey": "source6",
+      "detailImageKeys": ["detail31", "detail32", "detail33", "detail34", "detail35", "detail1"],
+      "technologies": ["React", "Vite", "Firebase", "Framer Motion"],
+      "price": 89,
+      "categoryId": "commerce",
+      "languages": ["TypeScript", "JavaScript"],
+      "projectType": "Landing",
+      "level": "starter",
+      "readmeHighlights": [
+        "Triển khai static hosting Firebase",
+        "Cấu hình animation nhiều bước",
+        "CMS mini bằng Firestore"
+      ],
+      "includes": ["Source TS", "Firestore rules", "Copy deck"],
+      "deliverables": ["Source code", "Config files", "Deployment notes"]
+    },
+    {
+      "id": "fresh-career-board",
+      "title": "Fresh Career Board",
+      "summary": "Trang việc làm nhanh cho startup, gợi ý kỹ năng và blog kinh nghiệm.",
+      "coverImageKey": "source2",
+      "detailImageKeys": ["detail2", "detail3", "detail4", "detail5", "detail6", "detail7"],
+      "technologies": ["Laravel", "MeiliSearch", "Vue 3", "S3 Storage"],
+      "price": 210,
+      "categoryId": "portal",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Portal",
+      "level": "professional",
+      "readmeHighlights": [
+        "Đồng bộ job từ Airtable",
+        "Thiết lập search gợi ý",
+        "Kịch bản email drip cho ứng viên"
+      ],
+      "includes": ["Source", "Seeder", "CRM workflow"],
+      "deliverables": ["Source code", "Seed data", "Automation playbook"]
+    },
+    {
+      "id": "utility-billing-kit",
+      "title": "Utility Billing Kit",
+      "summary": "Module quản lý hóa đơn dịch vụ đa chi nhánh với phân quyền rõ ràng.",
+      "coverImageKey": "source3",
+      "detailImageKeys": ["detail5", "detail6", "detail7", "detail8", "detail9", "detail10"],
+      "technologies": ["Symfony", "MySQL", "Twig", "Redis"],
+      "price": 75,
+      "categoryId": "management",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Management",
+      "level": "professional",
+      "readmeHighlights": [
+        "Chuẩn hoá phân quyền vai trò",
+        "Tối ưu truy vấn bằng cache",
+        "Tạo mẫu biên nhận PDF"
+      ],
+      "includes": ["Source", "Doctrine migrations", "PDF layouts"],
+      "deliverables": ["Source code", "DB migrations", "Setup scripts"]
+    },
+    {
+      "id": "digital-gift-market",
+      "title": "Digital Gift Market",
+      "summary": "Landing bán quà tặng số, tích hợp thanh toán và upsell download.",
+      "coverImageKey": "source1",
+      "detailImageKeys": ["detail8", "detail9", "detail10", "detail11", "detail12", "detail13"],
+      "technologies": ["Next.js", "Stripe", "Contentful", "Tailwind"],
+      "price": 120,
+      "categoryId": "commerce",
+      "languages": ["TypeScript", "JavaScript"],
+      "projectType": "Landing",
+      "level": "professional",
+      "readmeHighlights": [
+        "Thiết lập webhook Stripe",
+        "Quy trình xuất mã quà",
+        "Tối ưu Core Web Vitals"
+      ],
+      "includes": ["Source", "Content model", "Copy file"],
+      "deliverables": ["Source code", "CMS schema", "Deploy checklist"]
+    },
+    {
+      "id": "qr-membership-panel",
+      "title": "QR Membership Panel",
+      "summary": "Bảng điều khiển QR thành viên với phân tích lượt quét real-time.",
+      "coverImageKey": "source5",
+      "detailImageKeys": ["detail11", "detail12", "detail13", "detail14", "detail15", "detail16"],
+      "technologies": ["Laravel", "Vue 3", "MySQL", "Redis"],
+      "price": 60,
+      "categoryId": "utility",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Utility",
+      "level": "starter",
+      "readmeHighlights": [
+        "Thiết kế realtime dashboard",
+        "Cách tạo QR động nhiều kênh",
+        "Thông báo Telegram cho admin"
+      ],
+      "includes": ["Source", "Env sample", "Webhook scripts"],
+      "deliverables": ["Source code", "DB migrations", "Guide PDF"]
+    },
+    {
+      "id": "creative-avatar-studio",
+      "title": "Creative Avatar Studio",
+      "summary": "Studio tạo avatar AI với hàng chờ, render pipeline và thông báo email.",
+      "coverImageKey": "source8",
+      "detailImageKeys": ["detail14", "detail15", "detail16", "detail17", "detail18", "detail19"],
+      "videoUrl": "https://www.youtube.com/embed/5qap5aO4i9A",
+      "technologies": ["Next.js", "Go API", "Stable Diffusion", "Supabase"],
+      "price": 259,
+      "categoryId": "ai",
+      "languages": ["TypeScript", "Python"],
+      "projectType": "Generator",
+      "level": "enterprise",
+      "readmeHighlights": [
+        "Lên lịch batch render",
+        "Giới hạn số lượt theo gói",
+        "Theo dõi GPU metrics"
+      ],
+      "includes": ["Frontend", "Worker scripts", "Infra IaC"],
+      "deliverables": ["Source code", "Terraform files", "Runbook"]
+    },
+    {
+      "id": "artisan-bakery-store",
+      "title": "Artisan Bakery Store",
+      "summary": "Website bakery thủ công, đặt bánh theo lịch và blog công thức.",
+      "coverImageKey": "souce9",
+      "detailImageKeys": ["detail17", "detail18", "detail19", "detail20", "detail21", "detail22"],
+      "technologies": ["Laravel", "Livewire", "MySQL", "Tailwind"],
+      "price": 180,
+      "categoryId": "food",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Food & Beverage",
+      "level": "professional",
+      "readmeHighlights": [
+        "Đặt lịch baking calendar",
+        "Module blog công thức",
+        "Kết nối SMS nhắc giao"
+      ],
+      "includes": ["Source", "Seeder", "SMS template"],
+      "deliverables": ["Source code", "DB seed", "Ops checklist"]
+    },
+    {
+      "id": "iced-drink-delivery",
+      "title": "Iced Drink Delivery",
+      "summary": "Ứng dụng đặt thức uống đa chi nhánh với realtime driver tracking.",
+      "coverImageKey": "source10",
+      "detailImageKeys": ["detail20", "detail21", "detail22", "detail23", "detail24", "detail25"],
+      "technologies": ["React Native", "Expo", "Firebase", "Stripe"],
+      "price": 220,
+      "categoryId": "food",
+      "languages": ["React Native", "TypeScript"],
+      "projectType": "Food & Beverage",
+      "level": "professional",
+      "readmeHighlights": [
+        "Triển khai push notification",
+        "Kết nối Stripe Terminal",
+        "Realtime driver location"
+      ],
+      "includes": ["Mobile source", "Cloud Functions", "Design system"],
+      "deliverables": ["Source code", "Cloud config", "Testing checklist"]
+    },
+    {
+      "id": "agency-landing-pack",
+      "title": "Agency Landing Pack",
+      "summary": "Combo landing cho agency digital gồm 5 layout và form nhận báo giá.",
+      "coverImageKey": "source4",
+      "detailImageKeys": ["detail23", "detail24", "detail25", "detail26", "detail27", "detail28"],
+      "technologies": ["Gatsby", "Contentful", "Netlify Forms", "Sass"],
+      "price": 140,
+      "categoryId": "portal",
+      "languages": ["JavaScript", "TypeScript"],
+      "projectType": "Landing",
+      "level": "professional",
+      "readmeHighlights": [
+        "Quy trình launch multi brand",
+        "Template brief khách hàng",
+        "Hook automation qua Zapier"
+      ],
+      "includes": ["Source", "Content model", "Copy deck"],
+      "deliverables": ["Source code", "CMS schema", "Launch checklist"]
+    },
+    {
+      "id": "boutique-fashion-cart",
+      "title": "Boutique Fashion Cart",
+      "summary": "Cửa hàng thời trang cao cấp với giỏ hàng theo look và wishlist.",
+      "coverImageKey": "source7",
+      "detailImageKeys": ["detail26", "detail27", "detail28", "detail29", "detail30", "detail31"],
+      "technologies": ["Magento", "MySQL", "LESS", "Redis"],
+      "price": 150,
+      "categoryId": "commerce",
+      "languages": ["PHP", "JavaScript"],
+      "projectType": "Ecommerce",
+      "level": "professional",
+      "readmeHighlights": [
+        "Tối ưu cache cho catalog lớn",
+        "Workflow hoàn trả",
+        "Module lookbook phối đồ"
+      ],
+      "includes": ["Theme", "Sample data", "CLI scripts"],
+      "deliverables": ["Source code", "DB seed", "Operation guide"]
+    }
+  ]
+}

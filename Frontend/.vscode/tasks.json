@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "npm: start",
+			"type": "shell",
+			"command": "C:\\Program Files\\nodejs\\npm.cmd",
+			"args": [
+				"run",
+				"start"
+			],
+			"options": {
+				"env": {
+					"PATH": "C:\\Program Files\\nodejs\\;${env:PATH}"
+				}
+			},
+			"problemMatcher": [],
+			"detail": "react-scripts start"
+		}
+	]
+}
