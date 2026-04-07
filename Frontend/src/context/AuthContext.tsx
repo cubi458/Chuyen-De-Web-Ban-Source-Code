@@ -1,18 +1,5 @@
 import React from "react";
-import {
-  User,
-  onAuthStateChanged,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  updateProfile,
-  sendEmailVerification,
-  getIdTokenResult,
-  browserLocalPersistence,
-  setPersistence,
-} from "firebase/auth";
-import type { IdTokenResult } from "firebase/auth";
-import { auth } from "lib/firebase";
+import { apiRequest, setToken, getToken } from "lib/api";
 import { BUILD_ID } from "buildId";
 
 type RegisterPayload = {
@@ -26,8 +13,19 @@ type LoginPayload = {
   password: string;
 };
 
+type AuthUser = {
+  uid: string;
+  email: string;
+  displayName?: string;
+  emailVerified: boolean;
+  role?: string;
+  metadata?: {
+    creationTime?: string;
+  };
+};
+
 type AuthContextValue = {
-  user: User | null;
+  user: AuthUser | null;
   loading: boolean;
   claims: AuthClaims | null;
   isAdmin: boolean;
@@ -40,146 +38,108 @@ type AuthContextValue = {
 
 const AuthContext = React.createContext<AuthContextValue | undefined>(undefined);
 
-type AuthClaims = IdTokenResult["claims"] & {
+type AuthClaims = {
   role?: string;
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = React.useState<User | null>(null);
+  const [user, setUser] = React.useState<AuthUser | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [claims, setClaims] = React.useState<AuthClaims | null>(null);
 
   React.useEffect(() => {
     const initializeSession = async () => {
-      try {
-        await setPersistence(auth, browserLocalPersistence);
-      } catch (error) {
-        console.warn("Không thể thiết lập persistence", error);
-      }
-
       if (typeof window === "undefined" || !window.localStorage) {
+        setLoading(false);
         return;
       }
 
       const flagKey = "source-market:last-build-id";
       const lastBuildId = window.localStorage.getItem(flagKey);
-      if (lastBuildId !== BUILD_ID && auth.currentUser) {
-        await signOut(auth);
+      if (lastBuildId !== BUILD_ID) {
+        setToken(null);
       }
       window.localStorage.setItem(flagKey, BUILD_ID);
+
+      if (!getToken()) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const result = await apiRequest<{ user: AuthUser }>("/auth/me", { method: "GET" }, true);
+        setUser(result.user);
+        setClaims({ role: result.user.role });
+      } catch (error) {
+        console.warn("Khong the khoi phuc phien dang nhap", error);
+        setToken(null);
+        setUser(null);
+        setClaims(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     initializeSession();
   }, []);
 
-  React.useEffect(() => {
-    let isMounted = true;
-
-    const unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
-      if (!isMounted) {
-        return;
-      }
-
-      if (!nextUser) {
-        setUser(null);
-        setClaims(null);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const tokenResult = await getIdTokenResult(nextUser);
-        if (!isMounted) {
-          return;
-        }
-        setUser(nextUser);
-        setClaims(tokenResult.claims as AuthClaims);
-      } catch (error) {
-        if (isMounted) {
-          setUser(nextUser);
-          setClaims(null);
-        }
-        console.error("Không thể lấy token claims:", error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
-  }, []);
-
-  const buildActionCodeSettings = React.useCallback(() => {
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-
-    return {
-      url: `${window.location.origin}/#/store/auth`,
-      handleCodeInApp: true,
-    };
-  }, []);
-
   const register = React.useCallback(
     async ({ email, password, displayName }: RegisterPayload) => {
-      const credential = await createUserWithEmailAndPassword(auth, email, password);
-
-      if (displayName) {
-        await updateProfile(credential.user, { displayName });
-      }
-
-      const actionCodeSettings = buildActionCodeSettings();
-      if (actionCodeSettings) {
-        await sendEmailVerification(credential.user, actionCodeSettings);
-      } else {
-        await sendEmailVerification(credential.user);
-      }
-
-      await signOut(auth);
+      await apiRequest(
+        "/auth/register",
+        {
+          method: "POST",
+          body: JSON.stringify({ email, password, displayName }),
+        },
+        false
+      );
     },
-    [buildActionCodeSettings]
+    []
   );
 
   const login = React.useCallback(async ({ email, password }: LoginPayload) => {
-    const credential = await signInWithEmailAndPassword(auth, email, password);
-    if (!credential.user.emailVerified) {
-      await signOut(auth);
-      throw new Error("Email chưa được xác thực. Vui lòng kiểm tra hộp thư và xác nhận tài khoản.");
-    }
-    await getIdTokenResult(credential.user, true);
+    const result = await apiRequest<{ token: string; user: AuthUser }>(
+      "/auth/login",
+      {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      },
+      false
+    );
+
+    setToken(result.token);
+    setUser(result.user);
+    setClaims({ role: result.user.role });
   }, []);
 
   const logout = React.useCallback(async () => {
-    await signOut(auth);
+    const token = getToken();
+    if (token) {
+      await apiRequest("/auth/logout", { method: "POST" }, true).catch(() => undefined);
+    }
+    setToken(null);
     setClaims(null);
     setUser(null);
   }, []);
 
   const sendVerificationEmail = React.useCallback(async () => {
-    if (!auth.currentUser) {
-      throw new Error("Chưa có người dùng đăng nhập");
+    if (!user?.email) {
+      throw new Error("Chua co email de gui xac thuc");
     }
-    const actionCodeSettings = buildActionCodeSettings();
-
-    if (actionCodeSettings) {
-      await sendEmailVerification(auth.currentUser, actionCodeSettings);
-    } else {
-      await sendEmailVerification(auth.currentUser);
-    }
-  }, [buildActionCodeSettings]);
+    await apiRequest(
+      "/auth/resend-verification",
+      { method: "POST", body: JSON.stringify({ email: user.email }) },
+      false
+    );
+  }, [user]);
 
   const refreshClaims = React.useCallback(async () => {
-    if (!auth.currentUser) {
+    if (!getToken()) {
       return;
     }
-
-    const tokenResult = await getIdTokenResult(auth.currentUser, true);
-    setClaims(tokenResult.claims as AuthClaims);
+    const result = await apiRequest<{ user: AuthUser }>("/auth/me", { method: "GET" }, true);
+    setUser(result.user);
+    setClaims({ role: result.user.role });
   }, []);
 
   const isAdmin = React.useMemo(() => claims?.role === "admin", [claims]);

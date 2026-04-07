@@ -177,7 +177,7 @@ function AdminDashboard() {
                       </small>
                     </FormGroup>
                     <Button color="success" block>
-                      Upload lên Firebase Storage
+                      Upload len he thong Backend
                     </Button>
                   </CardBody>
                 </Card>

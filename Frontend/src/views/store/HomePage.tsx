@@ -115,8 +115,8 @@ function HomePage() {
     });
   };
 
-  const handleAddProductToCart = (productId: string) => {
-    const result = addToCart(productId);
+  const handleAddProductToCart = async (productId: string) => {
+    const result = await addToCart(productId);
     setCartFeedback(result.message);
   };
 
