@@ -51,8 +51,8 @@ function SourceDetailPage() {
     return null;
   }
 
-  const handleAddToCart = () => {
-    const result = addToCart(product.id);
+  const handleAddToCart = async () => {
+    const result = await addToCart(product.id);
     setFeedback(result.message);
   };
 

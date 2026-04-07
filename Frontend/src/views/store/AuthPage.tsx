@@ -16,10 +16,8 @@ import {
 import StoreNavbar from "components/Navbars/StoreNavbar";
 import StoreFooter from "components/Footers/StoreFooter";
 import { useAuth } from "context/AuthContext";
-import { auth } from "lib/firebase";
-import { FirebaseError } from "firebase/app";
+import { apiRequest } from "lib/api";
 import { useLocation, useNavigate } from "react-router-dom";
-import { applyActionCode } from "firebase/auth";
 
 type AuthStep = "login" | "register" | "verify";
 
@@ -62,21 +60,6 @@ function AuthPage() {
   };
 
   const parseFirebaseError = (err: unknown) => {
-    if (err instanceof FirebaseError) {
-      switch (err.code) {
-        case "auth/email-already-in-use":
-          return "Email này đã được đăng ký.";
-        case "auth/invalid-email":
-          return "Email không hợp lệ.";
-        case "auth/weak-password":
-          return "Mật khẩu cần ít nhất 6 ký tự.";
-        case "auth/user-not-found":
-        case "auth/wrong-password":
-          return "Sai email hoặc mật khẩu.";
-        default:
-          return err.message;
-      }
-    }
     if (err instanceof Error) {
       return err.message;
     }
@@ -116,7 +99,14 @@ function AuthPage() {
 
     setHandlingAction(true);
 
-    applyActionCode(auth, oobCode)
+    apiRequest(
+      "/auth/verify-email",
+      {
+        method: "POST",
+        body: JSON.stringify({ code: oobCode }),
+      },
+      false
+    )
       .then(() => {
         setStep("login");
         setPendingVerifyEmail(null);

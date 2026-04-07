@@ -48,8 +48,8 @@ function CatalogPage() {
     };
   }, []);
 
-  const handleAddToCart = (productId: string) => {
-    const result = addToCart(productId);
+  const handleAddToCart = async (productId: string) => {
+    const result = await addToCart(productId);
     setFeedback(result.message);
   };
 

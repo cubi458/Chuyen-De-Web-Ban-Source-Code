@@ -6,7 +6,6 @@
   "dependencies": {
     "ajv": "^8.17.1",
     "bootstrap": "^4.6.2",
-    "firebase": "^12.6.0",
     "moment": "2.29.4",
     "nouislider": "15.4.0",
     "react": "^17.0.2",
@@ -25,8 +24,7 @@
     "eject": "react-scripts eject",
     "install:clean": "rm -rf node_modules/ && rm -rf package-lock.json && npm install && npm start",
     "compile-sass": "sass src/assets/scss/now-ui-kit.scss src/assets/css/now-ui-kit.css",
-    "minify-sass": "sass src/assets/scss/now-ui-kit.scss src/assets/css/now-ui-kit.min.css --style compressed",
-    "set-admin": "node scripts/setAdminClaim.js"
+    "minify-sass": "sass src/assets/scss/now-ui-kit.scss src/assets/css/now-ui-kit.min.css --style compressed"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -55,7 +53,6 @@
     "@types/node": "^24.10.1",
     "@types/react": "^17.0.90",
     "@types/react-dom": "^17.0.26",
-    "firebase-admin": "^12.7.0",
     "typescript": "^4.9.5"
   }
 }
