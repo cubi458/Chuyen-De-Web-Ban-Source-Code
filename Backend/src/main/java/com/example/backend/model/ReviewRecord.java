@@ -1,14 +1,35 @@
 package com.example.backend.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.time.Instant;
 
+@Entity
+@Table(name = "review_records")
 public class ReviewRecord {
+    @Id
+    @Column(length = 64)
     private String id;
+
+    @Column(name = "product_id", nullable = false, length = 128)
     private String productId;
+
+    @Column(name = "user_id", nullable = false, length = 64)
     private String userId;
+
+    @Column(name = "user_name", nullable = false)
     private String userName;
+
+    @Column(nullable = false)
     private int rating;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String comment;
+
+    @Column(name = "created_at")
     private Instant createdAt;
 
     public String getId() {

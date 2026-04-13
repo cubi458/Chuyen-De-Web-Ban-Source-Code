@@ -21,17 +21,14 @@ public class MailService {
     }
 
     public void sendVerificationEmail(String to, String verifyUrl) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(to);
-            if (fromAddress != null && !fromAddress.isBlank()) {
-                message.setFrom(fromAddress);
-            }
-            message.setSubject("Xac thuc tai khoan Source Market");
-            message.setText("Cam on ban da dang ky.\n\nNhan vao link de xac thuc email:\n" + verifyUrl);
-            mailSender.send(message);
-        } catch (Exception ex) {
-            LOGGER.warn("Failed to send verification email to {}: {}", to, ex.getMessage());
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        if (fromAddress != null && !fromAddress.isBlank()) {
+            message.setFrom(fromAddress);
         }
+        message.setSubject("Xac thuc tai khoan Source Market");
+        message.setText("Cam on ban da dang ky.\n\nNhan vao link de xac thuc email:\n" + verifyUrl);
+        mailSender.send(message);
+        LOGGER.info("Verification email sent to {}", to);
     }
 }
