@@ -7,26 +7,36 @@ import com.example.backend.model.OrderItem;
 import com.example.backend.model.OrderRecord;
 import com.example.backend.model.ReviewRecord;
 import com.example.backend.model.UserAccount;
+import com.example.backend.repository.CartItemRepository;
+import com.example.backend.repository.OrderRecordRepository;
+import com.example.backend.repository.ReviewRecordRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class CommerceService {
-    private final Map<String, List<CartItem>> cartsByUser = new ConcurrentHashMap<>();
-    private final Map<String, List<OrderRecord>> ordersByUser = new ConcurrentHashMap<>();
-    private final Map<String, List<ReviewRecord>> reviewsByProduct = new ConcurrentHashMap<>();
+    private final CartItemRepository cartItemRepository;
+    private final OrderRecordRepository orderRecordRepository;
+    private final ReviewRecordRepository reviewRecordRepository;
+
+    public CommerceService(
+            CartItemRepository cartItemRepository,
+            OrderRecordRepository orderRecordRepository,
+            ReviewRecordRepository reviewRecordRepository
+    ) {
+        this.cartItemRepository = cartItemRepository;
+        this.orderRecordRepository = orderRecordRepository;
+        this.reviewRecordRepository = reviewRecordRepository;
+    }
 
     public List<CartItem> getCart(UserAccount user) {
-        return new ArrayList<>(cartsByUser.computeIfAbsent(user.getId(), ignored -> new ArrayList<>()));
+        return cartItemRepository.findByUserIdOrderByIdDesc(user.getId());
     }
 
     public CartActionResult addToCart(UserAccount user, String productId) {
@@ -34,37 +44,36 @@ public class CommerceService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "productId khong hop le");
         }
 
-        List<CartItem> cart = cartsByUser.computeIfAbsent(user.getId(), ignored -> new ArrayList<>());
-        CartItem existing = cart.stream().filter(item -> item.getProductId().equals(productId)).findFirst().orElse(null);
+        CartItem existing = cartItemRepository.findByUserIdAndProductId(user.getId(), productId).orElse(null);
         if (existing != null) {
             existing.setQuantity(existing.getQuantity() + 1);
+            cartItemRepository.save(existing);
         } else {
             CartItem item = new CartItem();
             item.setId("cart-" + UUID.randomUUID());
+            item.setUserId(user.getId());
             item.setProductId(productId);
             item.setQuantity(1);
             item.setLicense("personal");
             item.setSupportPlan("standard");
-            cart.add(item);
+            cartItemRepository.save(item);
         }
 
-        return new CartActionResult(true, "Da them san pham vao gio hang", new ArrayList<>(cart));
+        return new CartActionResult(true, "Da them san pham vao gio hang", getCart(user));
     }
 
     public List<CartItem> updateQuantity(UserAccount user, String itemId, int delta) {
-        List<CartItem> cart = cartsByUser.computeIfAbsent(user.getId(), ignored -> new ArrayList<>());
-        CartItem target = cart.stream().filter(item -> item.getId().equals(itemId)).findFirst().orElse(null);
-        if (target == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay item trong gio hang");
-        }
+        CartItem target = cartItemRepository.findByIdAndUserId(itemId, user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay item trong gio hang"));
+
         target.setQuantity(Math.max(1, target.getQuantity() + delta));
-        return new ArrayList<>(cart);
+        cartItemRepository.save(target);
+        return getCart(user);
     }
 
     public List<CartItem> removeItem(UserAccount user, String itemId) {
-        List<CartItem> cart = cartsByUser.computeIfAbsent(user.getId(), ignored -> new ArrayList<>());
-        cart.removeIf(item -> item.getId().equals(itemId));
-        return new ArrayList<>(cart);
+        cartItemRepository.deleteByIdAndUserId(itemId, user.getId());
+        return getCart(user);
     }
 
     public OrderRecord createOrder(UserAccount user, CreateOrderRequest request) {
@@ -73,7 +82,6 @@ public class CommerceService {
         order.setUserId(user.getId());
         order.setUserEmail(user.getEmail());
         order.setUserName(user.getDisplayName());
-        order.setItems(copyItems(request.getItems()));
         order.setSubtotal(request.getSubtotal());
         order.setDiscountCode(request.getDiscountCode());
         order.setDiscountAmount(request.getDiscountAmount());
@@ -83,15 +91,14 @@ public class CommerceService {
         order.setNote(request.getNote());
         order.setCreatedAt(Instant.now());
 
-        List<OrderRecord> userOrders = ordersByUser.computeIfAbsent(user.getId(), ignored -> new ArrayList<>());
-        userOrders.add(0, order);
-        return order;
+        List<OrderItem> copiedItems = copyItems(request.getItems());
+        order.setItems(copiedItems);
+
+        return orderRecordRepository.save(order);
     }
 
     public List<OrderRecord> getOrders(UserAccount user) {
-        List<OrderRecord> orders = new ArrayList<>(ordersByUser.computeIfAbsent(user.getId(), ignored -> new ArrayList<>()));
-        orders.sort(Comparator.comparing(OrderRecord::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
-        return orders;
+        return orderRecordRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
     }
 
     public ReviewRecord createReview(UserAccount user, CreateReviewRequest request) {
@@ -104,15 +111,11 @@ public class CommerceService {
         review.setComment(request.getComment().trim());
         review.setCreatedAt(Instant.now());
 
-        List<ReviewRecord> productReviews = reviewsByProduct.computeIfAbsent(request.getProductId(), ignored -> new ArrayList<>());
-        productReviews.add(0, review);
-        return review;
+        return reviewRecordRepository.save(review);
     }
 
     public List<ReviewRecord> getReviews(String productId) {
-        List<ReviewRecord> reviews = new ArrayList<>(reviewsByProduct.computeIfAbsent(productId, ignored -> new ArrayList<>()));
-        reviews.sort(Comparator.comparing(ReviewRecord::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
-        return reviews;
+        return reviewRecordRepository.findByProductIdOrderByCreatedAtDesc(productId);
     }
 
     public List<DownloadItem> getDownloadItems(UserAccount user) {
@@ -143,6 +146,7 @@ public class CommerceService {
         }
         for (OrderItem item : source) {
             OrderItem copied = new OrderItem();
+            copied.setId("item-" + UUID.randomUUID());
             copied.setProductId(item.getProductId());
             copied.setProductTitle(item.getProductTitle());
             copied.setPrice(item.getPrice());

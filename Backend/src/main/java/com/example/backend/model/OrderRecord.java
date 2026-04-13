@@ -1,22 +1,58 @@
 package com.example.backend.model;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+@Entity
+@Table(name = "order_records")
 public class OrderRecord {
+    @Id
+    @Column(length = 64)
     private String id;
+
+    @Column(name = "user_id", nullable = false, length = 64)
     private String userId;
+
+    @Column(name = "user_email", nullable = false)
     private String userEmail;
+
+    @Column(name = "user_name", nullable = false)
     private String userName;
+
+    @OneToMany(mappedBy = "orderRecord", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<OrderItem> items = new ArrayList<>();
+
+    @Column(nullable = false)
     private double subtotal;
+
+    @Column(name = "discount_code", length = 64)
     private String discountCode;
+
+    @Column(name = "discount_amount", nullable = false)
     private double discountAmount;
+
+    @Column(nullable = false)
     private double total;
+
+    @Column(name = "payment_method", length = 64)
     private String paymentMethod;
+
+    @Column(nullable = false, length = 32)
     private String status;
+
+    @Column(columnDefinition = "TEXT")
     private String note;
+
+    @Column(name = "created_at")
     private Instant createdAt;
 
     public String getId() {
@@ -56,7 +92,14 @@ public class OrderRecord {
     }
 
     public void setItems(List<OrderItem> items) {
-        this.items = items;
+        this.items.clear();
+        if (items == null) {
+            return;
+        }
+        for (OrderItem item : items) {
+            item.setOrderRecord(this);
+            this.items.add(item);
+        }
     }
 
     public double getSubtotal() {

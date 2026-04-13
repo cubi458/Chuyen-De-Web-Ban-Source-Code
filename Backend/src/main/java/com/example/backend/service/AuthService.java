@@ -1,6 +1,9 @@
 package com.example.backend.service;
 
 import com.example.backend.model.UserAccount;
+import com.example.backend.model.VerificationToken;
+import com.example.backend.repository.UserAccountRepository;
+import com.example.backend.repository.VerificationTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,11 +19,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AuthService {
-    private final Map<String, UserAccount> usersByEmail = new ConcurrentHashMap<>();
-    private final Map<String, UserAccount> usersById = new ConcurrentHashMap<>();
     private final Map<String, String> sessions = new ConcurrentHashMap<>();
-    private final Map<String, String> verifyCodes = new ConcurrentHashMap<>();
     private final MailService mailService;
+    private final UserAccountRepository userAccountRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
 
     @Value("${app.frontend.base-url:http://localhost:3000}")
     private String frontendBaseUrl;
@@ -28,13 +30,19 @@ public class AuthService {
     @Value("${app.admin.email:admin@localhost}")
     private String adminEmail;
 
-    public AuthService(MailService mailService) {
+    public AuthService(
+            MailService mailService,
+            UserAccountRepository userAccountRepository,
+            VerificationTokenRepository verificationTokenRepository
+    ) {
         this.mailService = mailService;
+        this.userAccountRepository = userAccountRepository;
+        this.verificationTokenRepository = verificationTokenRepository;
     }
 
     public UserAccount register(String email, String password, String displayName) {
         String normalizedEmail = normalizeEmail(email);
-        if (usersByEmail.containsKey(normalizedEmail)) {
+        if (userAccountRepository.existsByEmail(normalizedEmail)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email da duoc dang ky");
         }
 
@@ -47,30 +55,28 @@ public class AuthService {
         user.setRole(normalizedEmail.equalsIgnoreCase(adminEmail) ? "admin" : "customer");
         user.setCreatedAt(Instant.now());
 
-        usersByEmail.put(normalizedEmail, user);
-        usersById.put(user.getId(), user);
+        userAccountRepository.save(user);
 
         sendVerification(user);
         return user;
     }
 
     public void verifyEmail(String code) {
-        String userId = verifyCodes.remove(code);
-        if (userId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ma xac thuc khong hop le hoac da het han");
-        }
-        UserAccount user = usersById.get(userId);
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nguoi dung khong ton tai");
-        }
+        VerificationToken token = verificationTokenRepository.findByCode(code)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ma xac thuc khong hop le hoac da het han"));
+
+        UserAccount user = userAccountRepository.findById(token.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nguoi dung khong ton tai"));
+
         user.setEmailVerified(true);
+        userAccountRepository.save(user);
+        verificationTokenRepository.delete(token);
     }
 
     public void resendVerification(String email) {
-        UserAccount user = usersByEmail.get(normalizeEmail(email));
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay tai khoan");
-        }
+        UserAccount user = userAccountRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay tai khoan"));
+
         if (user.isEmailVerified()) {
             return;
         }
@@ -78,7 +84,7 @@ public class AuthService {
     }
 
     public LoginResult login(String email, String password) {
-        UserAccount user = usersByEmail.get(normalizeEmail(email));
+        UserAccount user = userAccountRepository.findByEmail(normalizeEmail(email)).orElse(null);
         if (user == null || !user.getPasswordHash().equals(hashPassword(password))) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai email hoac mat khau");
         }
@@ -86,9 +92,9 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Email chua duoc xac thuc. Vui long kiem tra hop thu va xac nhan tai khoan.");
         }
 
-        String token = UUID.randomUUID().toString();
-        sessions.put(token, user.getId());
-        return new LoginResult(token, user);
+        String tokenValue = UUID.randomUUID().toString();
+        sessions.put(tokenValue, user.getId());
+        return new LoginResult(tokenValue, user);
     }
 
     public void logout(String bearerToken) {
@@ -102,17 +108,21 @@ public class AuthService {
         if (userId == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Phien dang nhap khong hop le");
         }
-        UserAccount user = usersById.get(userId);
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Nguoi dung khong ton tai");
-        }
-        return user;
+        return userAccountRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Nguoi dung khong ton tai"));
     }
 
     private void sendVerification(UserAccount user) {
         String code = UUID.randomUUID().toString();
-        verifyCodes.put(code, user.getId());
-        String verifyUrl = frontendBaseUrl + "/#/store/auth?mode=verifyEmail&code=" + code;
+
+        verificationTokenRepository.deleteByUserId(user.getId());
+        VerificationToken token = new VerificationToken();
+        token.setCode(code);
+        token.setUserId(user.getId());
+        token.setCreatedAt(Instant.now());
+        verificationTokenRepository.save(token);
+
+        String verifyUrl = frontendBaseUrl + "/#/store/auth?mode=verifyEmail&oobCode=" + code;
         mailService.sendVerificationEmail(user.getEmail(), verifyUrl);
     }
 
