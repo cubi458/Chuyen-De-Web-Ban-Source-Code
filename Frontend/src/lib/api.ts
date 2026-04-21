@@ -27,10 +27,15 @@ export const apiRequest = async <T>(
   requireAuth = false
 ): Promise<T> => {
   const token = getToken();
+  const body = options.body;
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
+
+  if (!isFormData && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (requireAuth && token) {
     headers.Authorization = `Bearer ${token}`;

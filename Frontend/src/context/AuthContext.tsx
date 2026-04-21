@@ -30,7 +30,7 @@ type AuthContextValue = {
   claims: AuthClaims | null;
   isAdmin: boolean;
   register: (payload: RegisterPayload) => Promise<void>;
-  login: (payload: LoginPayload) => Promise<void>;
+  login: (payload: LoginPayload) => Promise<AuthUser>;
   logout: () => Promise<void>;
   sendVerificationEmail: () => Promise<void>;
   refreshClaims: () => Promise<void>;
@@ -110,6 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(result.token);
     setUser(result.user);
     setClaims({ role: result.user.role });
+    return result.user;
   }, []);
 
   const logout = React.useCallback(async () => {
