@@ -279,6 +279,13 @@ export const Chat: React.FC<ChatProps> = ({ title = "Chat Bot", placeholder = "G
   useEffect(() => {
     const el = document.createElement("div");
     el.setAttribute("data-chat-portal", "true");
+    el.style.position = "fixed";
+    el.style.left = "0";
+    el.style.top = "0";
+    el.style.width = "0";
+    el.style.height = "0";
+    el.style.zIndex = "1000000";
+    el.style.pointerEvents = "auto";
     document.body.appendChild(el);
     portalRootRef.current = el;
     return () => {

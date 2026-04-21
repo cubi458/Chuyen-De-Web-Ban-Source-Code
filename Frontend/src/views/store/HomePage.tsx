@@ -15,22 +15,110 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupText,
-  Label,
   Row,
 } from "reactstrap";
 import StoreNavbar from "components/Navbars/StoreNavbar";
 import StoreFooter from "components/Footers/StoreFooter";
+import { apiRequest } from "lib/api";
 import {
   languageFilters,
   priceFilters,
   projectTypes,
   sourceCategories,
-  sourceProducts,
 } from "data/sourceCatalog";
 import heroBackground from "assets/img/bg8.jpg";
 import valueIllustration from "assets/img/Trang nen, anh gioi thieu, quang cao/top-code.jpg";
 import { Chat } from "features/chat/components";
 import { useCart } from "context/CartContext";
+
+type DbProductResponse = {
+  id: string;
+  title: string;
+  slug: string;
+  price: number;
+  categoryId: string;
+  techStack?: string;
+  repository?: string;
+  description?: string;
+  zipFileName?: string;
+  createdAt?: string;
+};
+
+type HomeProduct = {
+  id: string;
+  title: string;
+  summary: string;
+  price: number;
+  categoryId: string;
+  projectType: string;
+  technologies: string[];
+  languages: string[];
+  coverImage: string;
+};
+
+const detectLanguages = (techStack: string[]): string[] => {
+  const normalized = techStack.join(" ").toLowerCase();
+  const result: string[] = [];
+
+  if (normalized.includes("php") || normalized.includes("laravel") || normalized.includes("wordpress")) {
+    result.push("PHP");
+  }
+  if (normalized.includes("typescript") || normalized.includes("ts")) {
+    result.push("TypeScript");
+  }
+  if (
+    normalized.includes("javascript") ||
+    normalized.includes("react") ||
+    normalized.includes("next") ||
+    normalized.includes("vue")
+  ) {
+    result.push("JavaScript");
+  }
+  if (normalized.includes("python") || normalized.includes("fastapi") || normalized.includes("django")) {
+    result.push("Python");
+  }
+  if (normalized.includes("react native")) {
+    result.push("React Native");
+  }
+
+  return result.length > 0 ? result : ["JavaScript"];
+};
+
+const inferProjectType = (categoryId: string): string => {
+  const map: Record<string, string> = {
+    commerce: "Ecommerce",
+    portal: "Portal",
+    management: "Management",
+    utility: "Utility",
+    food: "Food & Beverage",
+    ai: "Generator",
+  };
+  return map[categoryId] ?? "Landing";
+};
+
+const mapDbProductToHomeProduct = (product: DbProductResponse): HomeProduct => {
+  const technologies = (product.techStack || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const summarySource = product.description?.trim();
+
+  return {
+    id: product.id,
+    title: product.title,
+    summary:
+      summarySource && summarySource.length > 0
+        ? summarySource
+        : "Sản phẩm mới được cập nhật từ hệ thống quản trị.",
+    price: product.price,
+    categoryId: product.categoryId,
+    projectType: inferProjectType(product.categoryId),
+    technologies: technologies.length > 0 ? technologies : ["Source Code"],
+    languages: detectLanguages(technologies),
+    coverImage: valueIllustration,
+  };
+};
 
 function HomePage() {
   const { addToCart } = useCart();
@@ -43,6 +131,9 @@ function HomePage() {
   );
   const categoryProductsRef = React.useRef<HTMLDivElement | null>(null);
   const [cartFeedback, setCartFeedback] = React.useState<string | null>(null);
+  const [products, setProducts] = React.useState<HomeProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     document.body.classList.add("profile-page");
@@ -54,6 +145,24 @@ function HomePage() {
       document.body.classList.remove("profile-page");
       document.body.classList.remove("sidebar-collapse");
     };
+  }, []);
+
+  React.useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoadingProducts(true);
+        setLoadError(null);
+        const dbProducts = await apiRequest<DbProductResponse[]>("/products", { method: "GET" }, false);
+        setProducts(dbProducts.map(mapDbProductToHomeProduct));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Khong the tai danh sach san pham";
+        setLoadError(message);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+
+    loadProducts();
   }, []);
 
   const matchSearch = (value: string) =>
@@ -78,7 +187,7 @@ function HomePage() {
     }
   };
 
-  const filteredProducts = sourceProducts.filter((product) =>
+  const filteredProducts = products.filter((product) =>
     [
       product.title,
       product.summary,
@@ -101,9 +210,9 @@ function HomePage() {
   const selectedCategoryProducts = React.useMemo(
     () =>
       selectedCategoryId
-        ? sourceProducts.filter((product) => product.categoryId === selectedCategoryId)
+        ? products.filter((product) => product.categoryId === selectedCategoryId)
         : [],
-    [selectedCategoryId]
+      [selectedCategoryId, products]
   );
 
   const handleCategorySelect = (categoryId: string) => {
@@ -131,7 +240,8 @@ function HomePage() {
   return (
     <>
       <StoreNavbar />
-      <div className="wrapper">
+      <div className="wrapper d-flex flex-column min-vh-100">
+        <div className="flex-grow-1">
         <div className="page-header page-header-small">
           <div
             className="page-header-image"
@@ -225,11 +335,16 @@ function HomePage() {
                 {cartFeedback}
               </Alert>
             )}
+            {loadError && (
+              <Alert color="danger" toggle={() => setLoadError(null)}>
+                {loadError}
+              </Alert>
+            )}
             <div className="featured-header d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
               <div className="flex-grow-1">
                 <h2 className="title mb-0 featured-heading">Source code nổi bật</h2>
                 <p className="category text-muted mb-0">
-                  {filteredProducts.length} sản phẩm phù hợp tiêu chí
+                  {loadingProducts ? "Đang tải sản phẩm..." : `${filteredProducts.length} sản phẩm phù hợp tiêu chí`}
                 </p>
               </div>
               <Button color="info" tag={Link} to="/store/catalog" className="mt-3 mt-md-0">
@@ -237,6 +352,13 @@ function HomePage() {
               </Button>
             </div>
             <Row>
+              {!loadingProducts && filteredProducts.length === 0 && (
+                <Col md="12">
+                  <Card className="card-plain border">
+                    <CardBody>Chưa có sản phẩm trong database hoặc chưa có sản phẩm khớp bộ lọc.</CardBody>
+                  </Card>
+                </Col>
+              )}
               {filteredProducts.map((product) => (
                 <Col lg="4" md="6" className="mb-4" key={product.id}>
                   <Card className="card-product">
@@ -479,10 +601,11 @@ function HomePage() {
             </Row>
           </Container>
         </div>
-        <div className="chat-float">
-          <Chat title="Hỗ trợ" placeholder="Gõ tin nhắn..." />
+        <Chat title="Hỗ trợ" placeholder="Gõ tin nhắn..." />
         </div>
-        <StoreFooter />
+        <div className="mt-auto">
+          <StoreFooter />
+        </div>
       </div>
     </>
   );

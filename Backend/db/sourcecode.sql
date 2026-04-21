@@ -70,3 +70,21 @@ CREATE TABLE IF NOT EXISTS review_records (
   CONSTRAINT fk_review_user FOREIGN KEY (user_id) REFERENCES user_accounts(id) ON DELETE CASCADE,
   INDEX idx_review_product_created (product_id, created_at)
 );
+
+CREATE TABLE IF NOT EXISTS product_records (
+  id VARCHAR(64) PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(180) NOT NULL UNIQUE,
+  price DOUBLE NOT NULL,
+  category_id VARCHAR(64) NOT NULL,
+  tech_stack TEXT,
+  repository VARCHAR(500),
+  description TEXT,
+  zip_file_name VARCHAR(255),
+  zip_file_path VARCHAR(500),
+  created_by VARCHAR(64),
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_product_created_by FOREIGN KEY (created_by) REFERENCES user_accounts(id) ON DELETE SET NULL,
+  INDEX idx_product_category_created (category_id, created_at)
+);

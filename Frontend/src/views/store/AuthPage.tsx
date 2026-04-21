@@ -149,13 +149,14 @@ function AuthPage() {
           confirmPassword: "",
         }));
       } else {
-        await login({ email: form.email, password: form.password });
+        const loggedInUser = await login({ email: form.email, password: form.password });
         setSuccess("Đăng nhập thành công.");
         setForm((prev) => ({
           ...prev,
           password: "",
           confirmPassword: "",
         }));
+        navigate(loggedInUser.role === "admin" ? "/admin" : "/store", { replace: true });
       }
     } catch (err) {
       const message = parseFirebaseError(err);
@@ -207,8 +208,8 @@ function AuthPage() {
   return (
     <>
       <StoreNavbar />
-      <div className="wrapper">
-        <div className="section section-signup">
+      <div className="wrapper d-flex flex-column" style={{ minHeight: "100vh" }}>
+        <div className="section section-signup flex-grow-1 d-flex align-items-center">
           <Container>
             <Row className="justify-content-center">
               <Col lg="6" md="8">
