@@ -48,6 +48,20 @@ public class AdminProductService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay san pham"));
     }
 
+    public Path getRequiredZipFilePath(ProductRecord product) {
+        String zipPath = product.getZipFilePath();
+        if (zipPath == null || zipPath.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "San pham nay chua co file zip de tai");
+        }
+
+        Path filePath = Paths.get(zipPath).toAbsolutePath().normalize();
+        if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay file zip cua san pham");
+        }
+
+        return filePath;
+    }
+
     public void deleteProduct(String productId) {
         ProductRecord product = getProductById(productId);
         String zipPath = product.getZipFilePath();

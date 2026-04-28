@@ -119,13 +119,13 @@ function CheckoutPage() {
         discountAmount,
         total,
         paymentMethod: paymentMethods.find((m) => m.id === payment)?.label || payment,
-        status: "paid",
+        status: "pending",
         note: buyer.note || undefined,
       });
 
       setFeedback({
         type: "success",
-        message: `Thanh toán test thành công! Mã tham chiếu ${simulatedPaymentId}`,
+        message: `Đơn hàng đã được ghi nhận. Mã tham chiếu ${simulatedPaymentId}. Chờ admin xác nhận để tải file.`,
       });
 
       setTimeout(() => {

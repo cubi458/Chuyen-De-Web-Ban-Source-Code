@@ -1,4 +1,4 @@
-const API_BASE_URL =
+export const API_BASE_URL =
   ((globalThis as { REACT_APP_API_BASE_URL?: string }).REACT_APP_API_BASE_URL as string | undefined) ||
   "http://localhost:8080/api";
 const TOKEN_KEY = "source-market-token";

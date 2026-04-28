@@ -18,8 +18,6 @@ import AdminNavbar from "components/Navbars/AdminNavbar";
 import StoreFooter from "components/Footers/StoreFooter";
 import { apiRequest } from "lib/api";
 import {
-  findProductById,
-  initialAdminOrders,
   sourceCategories,
 } from "data/sourceCatalog";
 
@@ -36,12 +34,39 @@ type AdminProduct = {
   createdAt?: string;
 };
 
+type AdminOrderItem = {
+  id: string;
+  productId: string;
+  productTitle: string;
+  price: number;
+  quantity: number;
+  license: string;
+};
+
+type AdminOrder = {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  items: AdminOrderItem[];
+  subtotal: number;
+  discountCode?: string;
+  discountAmount: number;
+  total: number;
+  paymentMethod: string;
+  status: "pending" | "paid" | "cancelled";
+  note?: string;
+  createdAt: string;
+};
+
 function AdminDashboard() {
-  const [orders, setOrders] = React.useState(initialAdminOrders);
+  const [orders, setOrders] = React.useState<AdminOrder[]>([]);
   const [products, setProducts] = React.useState<AdminProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = React.useState(true);
+  const [loadingOrders, setLoadingOrders] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
   const [deletingProductId, setDeletingProductId] = React.useState<string | null>(null);
+  const [confirmingOrderId, setConfirmingOrderId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
   const [newSource, setNewSource] = React.useState({
@@ -83,12 +108,80 @@ function AdminDashboard() {
     loadProducts();
   }, []);
 
-  const confirmOrder = (orderId: string) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId ? { ...order, status: "paid" } : order
-      )
+  React.useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        setLoadingOrders(true);
+        const result = await apiRequest<AdminOrder[]>('/admin/orders', { method: 'GET' }, true);
+        setOrders(result);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Khong the tai danh sach don hang';
+        setError(message);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    loadOrders();
+  }, []);
+
+  const confirmOrder = async (orderId: string) => {
+    setError(null);
+    setSuccess(null);
+
+    try {
+      setConfirmingOrderId(orderId);
+      const updated = await apiRequest<AdminOrder>(
+        `/admin/orders/${orderId}/status`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ status: "paid" }),
+        },
+        true
+      );
+      setOrders((prev) => prev.map((order) => (order.id === orderId ? updated : order)));
+      setSuccess(`Đã xác nhận thanh toán cho đơn ${orderId}.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Khong the xac nhan don hang";
+      setError(message);
+    } finally {
+      setConfirmingOrderId(null);
+    }
+  };
+
+  const formatDate = (value?: string) => {
+    if (!value) return "-";
+    return new Date(value).toLocaleString("vi-VN");
+  };
+
+  const resolveProductName = (productId: string, storedTitle: string): string => {
+    // First try to find from loaded products
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      return product.title;
+    }
+    // Fall back to stored title if product not found
+    if (storedTitle && storedTitle.trim()) {
+      return storedTitle;
+    }
+    return productId;
+  };
+
+  const renderOrderSources = (order: AdminOrder) => {
+    if (order.items.length === 0) {
+      return "Không có sản phẩm";
+    }
+
+    const firstItemName = resolveProductName(
+      order.items[0].productId,
+      order.items[0].productTitle
     );
+
+    if (order.items.length === 1) {
+      return firstItemName;
+    }
+
+    return `${firstItemName} +${order.items.length - 1}`;
   };
 
   const handleCreateProduct = async (event: React.FormEvent) => {
@@ -411,6 +504,11 @@ function AdminDashboard() {
                 <h4 className="mb-0">Đơn hàng gần đây</h4>
               </CardHeader>
               <CardBody className="table-responsive">
+                {loadingOrders ? (
+                  <div>Dang tai danh sach don hang...</div>
+                ) : orders.length === 0 ? (
+                  <div className="text-muted">Chua co don hang nao trong database.</div>
+                ) : (
                 <Table>
                   <thead>
                     <tr>
@@ -424,25 +522,22 @@ function AdminDashboard() {
                   </thead>
                   <tbody>
                     {orders.map((order) => {
-                      const product = findProductById(order.productId);
-                      if (!product) {
-                        return null;
-                      }
                       return (
                         <tr key={order.id}>
                           <td>{order.id}</td>
                           <td>
-                            <div>{order.buyer}</div>
-                            <div className="text-muted small">{order.email}</div>
+                            <div>{order.userName}</div>
+                            <div className="text-muted small">{order.userEmail}</div>
+                            <div className="text-muted small">{formatDate(order.createdAt)}</div>
                           </td>
-                          <td>{product.title}</td>
+                          <td>{renderOrderSources(order)}</td>
                           <td>
-                            <div>${order.amount}</div>
-                            <small className="text-muted">{order.method}</small>
+                            <div>${order.total}</div>
+                            <small className="text-muted">{order.paymentMethod}</small>
                           </td>
                           <td>
-                            <Badge color={order.status === "paid" ? "success" : "warning"}>
-                              {order.status === "paid" ? "Đã xác nhận" : "Chờ xác nhận"}
+                            <Badge color={order.status === "paid" ? "success" : order.status === "cancelled" ? "danger" : "warning"}>
+                              {order.status === "paid" ? "Đã xác nhận" : order.status === "cancelled" ? "Đã hủy" : "Chờ xác nhận"}
                             </Badge>
                           </td>
                           <td className="text-right">
@@ -451,8 +546,9 @@ function AdminDashboard() {
                                 color="info"
                                 size="sm"
                                 onClick={() => confirmOrder(order.id)}
+                                disabled={confirmingOrderId === order.id}
                               >
-                                Xác nhận
+                                {confirmingOrderId === order.id ? "Đang xác nhận..." : "Xác nhận"}
                               </Button>
                             ) : (
                               <span className="text-success small">Đã mở link tải</span>
@@ -463,6 +559,7 @@ function AdminDashboard() {
                     })}
                   </tbody>
                 </Table>
+                )}
               </CardBody>
             </Card>
           </Container>

@@ -13,13 +13,21 @@ import {
 } from "reactstrap";
 import StoreNavbar from "components/Navbars/StoreNavbar";
 import StoreFooter from "components/Footers/StoreFooter";
+import { apiRequest, API_BASE_URL, getToken } from "lib/api";
 import { useAuth } from "context/AuthContext";
 import { useOrders } from "context/OrderContext";
+
+type DbProductResponse = {
+  id: string;
+  title: string;
+  price: number;
+};
 
 function DownloadsPage() {
   const { user, loading: authLoading } = useAuth();
   const { orders, loading: ordersLoading } = useOrders();
   const [downloading, setDownloading] = React.useState<string | null>(null);
+  const [productsById, setProductsById] = React.useState<Record<string, DbProductResponse>>({});
 
   React.useEffect(() => {
     document.body.classList.add("downloads-page");
@@ -28,6 +36,20 @@ function DownloadsPage() {
       document.body.classList.remove("downloads-page");
       document.body.classList.remove("sidebar-collapse");
     };
+  }, []);
+
+  React.useEffect(() => {
+    apiRequest<DbProductResponse[]>("/products", { method: "GET" }, false)
+      .then((list) => {
+        const next = list.reduce<Record<string, DbProductResponse>>((acc, product) => {
+          acc[product.id] = product;
+          return acc;
+        }, {});
+        setProductsById(next);
+      })
+      .catch(() => {
+        setProductsById({});
+      });
   }, []);
 
   if (authLoading) {
@@ -48,6 +70,12 @@ function DownloadsPage() {
   const paidOrders = orders.filter((order) => order.status === "paid");
   const totalDownloadable = paidOrders.reduce((count, order) => count + order.items.length, 0);
 
+  const resolveProductTitle = (productId: string, fallbackTitle: string) =>
+    productsById[productId]?.title || fallbackTitle || productId;
+
+  const resolveProductPrice = (productId: string, fallbackPrice: number) =>
+    productsById[productId]?.price ?? fallbackPrice;
+
   const formatDate = (timestamp: any) => {
     if (!timestamp) return "N/A";
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -58,13 +86,47 @@ function DownloadsPage() {
     });
   };
 
-  const handleDownload = (productId: string, productTitle: string) => {
+  const handleDownload = async (productId: string) => {
+    const token = getToken();
+    if (!token) {
+      alert("Vui long dang nhap lai de tai san pham.");
+      return;
+    }
+
     setDownloading(productId);
-    // Simulate download delay
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/products/${productId}/download`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        const message = payload?.message || payload?.error || "Khong the tai file";
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const fileNameMatch = disposition.match(/filename="?([^";]+)"?/i);
+      const fileName = fileNameMatch?.[1] || `${productId}.zip`;
+
+      const fileUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(fileUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Khong the tai file";
+      alert(`Tai that bai: ${message}`);
+    } finally {
       setDownloading(null);
-      alert(`Link tải cho "${productTitle}" sẽ được gửi qua email đăng ký hoặc tải trực tiếp từ dashboard.`);
-    }, 1500);
+    }
   };
 
   return (
@@ -159,7 +221,9 @@ function DownloadsPage() {
                                 <i className="now-ui-icons ui-1_check mr-1"></i>
                                 Đã thanh toán
                               </Badge>
-                              <h5 className="mb-1 font-weight-bold">{item.productTitle}</h5>
+                              <h5 className="mb-1 font-weight-bold">
+                                {resolveProductTitle(item.productId, item.productTitle)}
+                              </h5>
                               <small className="text-muted">
                                 <i className="now-ui-icons ui-1_calendar-60 mr-1"></i>
                                 Mua ngày: {formatDate(order.createdAt)}
@@ -185,7 +249,7 @@ function DownloadsPage() {
                             </div>
                             <div className="text-muted small">
                               <i className="now-ui-icons business_money-coins mr-1"></i>
-                              Giá: ${item.price}
+                              Giá: ${resolveProductPrice(item.productId, item.price)}
                             </div>
                           </div>
 
@@ -200,7 +264,7 @@ function DownloadsPage() {
                             color="info"
                             block
                             disabled={downloading === item.productId}
-                            onClick={() => handleDownload(item.productId, item.productTitle)}
+                            onClick={() => handleDownload(item.productId)}
                           >
                             {downloading === item.productId ? (
                               <>

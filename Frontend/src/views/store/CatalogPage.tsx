@@ -14,16 +14,68 @@ import {
 } from "reactstrap";
 import StoreNavbar from "components/Navbars/StoreNavbar";
 import StoreFooter from "components/Footers/StoreFooter";
+import { apiRequest } from "lib/api";
 import {
   sourceCategories,
-  sourceProducts,
-  SourceProduct,
 } from "data/sourceCatalog";
 import { useCart } from "context/CartContext";
+
+type DbProductResponse = {
+  id: string;
+  title: string;
+  slug: string;
+  price: number;
+  categoryId: string;
+  techStack?: string;
+  repository?: string;
+  description?: string;
+  zipFileName?: string;
+  createdAt?: string;
+};
+
+type CatalogProduct = {
+  id: string;
+  title: string;
+  summary: string;
+  price: number;
+  categoryId: string;
+  technologies: string[];
+  coverImage: string;
+};
+
+const coverImageByCategory: Record<string, string> = {
+  commerce: require("assets/img/SourceCode Anh/source1.jpg"),
+  portal: require("assets/img/SourceCode Anh/source2.jpg"),
+  management: require("assets/img/SourceCode Anh/source3.jpg"),
+  utility: require("assets/img/SourceCode Anh/source4.jpg"),
+  food: require("assets/img/SourceCode Anh/source5.jpg"),
+  ai: require("assets/img/SourceCode Anh/source6.jpg"),
+};
+
+const mapDbProductToCatalogProduct = (product: DbProductResponse): CatalogProduct => {
+  const technologies = (product.techStack || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return {
+    id: product.id,
+    title: product.title,
+    summary:
+      product.description?.trim() || "Sản phẩm mới được đồng bộ từ cơ sở dữ liệu.",
+    price: product.price,
+    categoryId: product.categoryId,
+    technologies: technologies.length > 0 ? technologies : ["Source Code"],
+    coverImage: coverImageByCategory[product.categoryId] || require("assets/img/SourceCode Anh/source7.jpg"),
+  };
+};
 
 function CatalogPage() {
   const { addToCart } = useCart();
   const [feedback, setFeedback] = React.useState<string | null>(null);
+  const [products, setProducts] = React.useState<CatalogProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
   type DragSession = {
     isDragging: boolean;
     startX: number;
@@ -48,6 +100,24 @@ function CatalogPage() {
     };
   }, []);
 
+  React.useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoadingProducts(true);
+        setLoadError(null);
+        const dbProducts = await apiRequest<DbProductResponse[]>('/products', { method: 'GET' }, false);
+        setProducts(dbProducts.map(mapDbProductToCatalogProduct));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Khong the tai danh sach san pham';
+        setLoadError(message);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
+
   const handleAddToCart = async (productId: string) => {
     const result = await addToCart(productId);
     setFeedback(result.message);
@@ -62,9 +132,9 @@ function CatalogPage() {
     node.scrollBy({ left: scrollAmount, behavior: "smooth" });
   };
 
-  const buildDeck = (products: SourceProduct[]) => {
+  const buildDeck = (products: CatalogProduct[]) => {
     if (products.length === 0) {
-      return [] as Array<{ product: SourceProduct; index: number }>;
+      return [] as Array<{ product: CatalogProduct; index: number }>;
     }
     const target = Math.max(products.length * 2, 12);
     return Array.from({ length: target }, (_, index) => ({
@@ -237,6 +307,11 @@ function CatalogPage() {
 
         <div className="section section-basic">
           <Container fluid className="catalog-container">
+            {loadError && (
+              <Alert color="danger" toggle={() => setLoadError(null)} className="sticky-feedback">
+                {loadError}
+              </Alert>
+            )}
             {feedback && (
               <Alert
                 color="success"
@@ -247,10 +322,11 @@ function CatalogPage() {
               </Alert>
             )}
             {sourceCategories.map((category) => {
-              const products = sourceProducts.filter(
-                (product) => product.categoryId === category.id
-              );
-              const deck = buildDeck(products);
+              const categoryProducts = products.filter((product) => product.categoryId === category.id);
+              const displayProducts = loadingProducts && categoryProducts.length === 0
+                ? []
+                : categoryProducts;
+              const deck = buildDeck(displayProducts);
 
               return (
                 <Row className="mb-5" key={category.id}>
@@ -268,13 +344,13 @@ function CatalogPage() {
                       ))}
                     </div>
                     <p className="text-muted">
-                      {products.length > 0
-                        ? `${products.length} source code`
+                      {displayProducts.length > 0
+                        ? `${displayProducts.length} source code`
                         : "Đang cập nhật"}
                     </p>
                   </Col>
                   <Col md="8">
-                    {products.length === 0 ? (
+                    {displayProducts.length === 0 ? (
                       <Card className="card-plain border">
                         <CardBody>
                           <p className="mb-0">

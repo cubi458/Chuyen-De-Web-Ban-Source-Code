@@ -22,14 +22,30 @@ import StoreNavbar from "components/Navbars/StoreNavbar";
 import StoreFooter from "components/Footers/StoreFooter";
 import { findProductById } from "data/sourceCatalog";
 import { useCart } from "context/CartContext";
+import { apiRequest } from "lib/api";
 import {
   validateDiscountCode,
   calculateDiscount,
   DiscountCode,
 } from "data/discountCodes";
 
+type DbProductResponse = {
+  id: string;
+  title: string;
+  price: number;
+  techStack?: string;
+};
+
+type CartProduct = {
+  id: string;
+  title: string;
+  price: number;
+  technologies: string[];
+};
+
 function CartPage() {
   const { items, updateQuantity, removeItem } = useCart();
+  const [productsById, setProductsById] = React.useState<Record<string, CartProduct>>({});
   const [discountInput, setDiscountInput] = React.useState("");
   const [appliedDiscount, setAppliedDiscount] = React.useState<DiscountCode | null>(null);
   const [discountFeedback, setDiscountFeedback] = React.useState<{
@@ -47,8 +63,50 @@ function CartPage() {
     };
   }, []);
 
+  React.useEffect(() => {
+    apiRequest<DbProductResponse[]>("/products", { method: "GET" }, false)
+      .then((list) => {
+        const next = list.reduce<Record<string, CartProduct>>((acc, product) => {
+          acc[product.id] = {
+            id: product.id,
+            title: product.title,
+            price: product.price,
+            technologies: (product.techStack || "")
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean),
+          };
+          return acc;
+        }, {});
+        setProductsById(next);
+      })
+      .catch(() => {
+        setProductsById({});
+      });
+  }, []);
+
+  const resolveProduct = React.useCallback(
+    (productId: string): CartProduct | null => {
+      const dbProduct = productsById[productId];
+      if (dbProduct) {
+        return dbProduct;
+      }
+      const staticProduct = findProductById(productId);
+      if (!staticProduct) {
+        return null;
+      }
+      return {
+        id: staticProduct.id,
+        title: staticProduct.title,
+        price: staticProduct.price,
+        technologies: staticProduct.technologies,
+      };
+    },
+    [productsById]
+  );
+
   const subtotal = items.reduce((sum, item) => {
-    const product = findProductById(item.productId);
+    const product = resolveProduct(item.productId);
     return product ? sum + product.price * item.quantity : sum;
   }, 0);
 
@@ -129,16 +187,13 @@ function CartPage() {
                         </thead>
                         <tbody>
                           {items.map((item) => {
-                            const product = findProductById(item.productId);
-                            if (!product) {
-                              return null;
-                            }
+                            const product = resolveProduct(item.productId);
                             return (
                               <tr key={item.id}>
                                 <td>
-                                  <strong>{product.title}</strong>
+                                  <strong>{product?.title || `San pham ${item.productId}`}</strong>
                                   <div className="text-muted small">
-                                    {product.technologies.slice(0, 2).join(" · ")}
+                                    {product?.technologies?.slice(0, 2).join(" · ") || "Dang dong bo thong tin san pham"}
                                   </div>
                                 </td>
                                 <td>
@@ -170,7 +225,7 @@ function CartPage() {
                                   </Button>
                                 </td>
                                 <td className="text-right">
-                                  <strong>${product.price * item.quantity}</strong>
+                                  <strong>${(product?.price || 0) * item.quantity}</strong>
                                 </td>
                               </tr>
                             );
