@@ -12,6 +12,7 @@ import com.example.backend.repository.OrderRecordRepository;
 import com.example.backend.repository.ReviewRecordRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -39,6 +40,7 @@ public class CommerceService {
         return cartItemRepository.findByUserIdOrderByIdDesc(user.getId());
     }
 
+    @Transactional
     public CartActionResult addToCart(UserAccount user, String productId) {
         if (productId == null || productId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "productId khong hop le");
@@ -62,6 +64,7 @@ public class CommerceService {
         return new CartActionResult(true, "Da them san pham vao gio hang", getCart(user));
     }
 
+    @Transactional
     public List<CartItem> updateQuantity(UserAccount user, String itemId, int delta) {
         CartItem target = cartItemRepository.findByIdAndUserId(itemId, user.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay item trong gio hang"));
@@ -71,6 +74,7 @@ public class CommerceService {
         return getCart(user);
     }
 
+    @Transactional
     public List<CartItem> removeItem(UserAccount user, String itemId) {
         cartItemRepository.deleteByIdAndUserId(itemId, user.getId());
         return getCart(user);
@@ -87,7 +91,7 @@ public class CommerceService {
         order.setDiscountAmount(request.getDiscountAmount());
         order.setTotal(request.getTotal());
         order.setPaymentMethod(request.getPaymentMethod());
-        order.setStatus(request.getStatus() == null || request.getStatus().isBlank() ? "paid" : request.getStatus());
+        order.setStatus("pending");
         order.setNote(request.getNote());
         order.setCreatedAt(Instant.now());
 
@@ -99,6 +103,44 @@ public class CommerceService {
 
     public List<OrderRecord> getOrders(UserAccount user) {
         return orderRecordRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+    }
+
+    public List<OrderRecord> getAllOrders() {
+        return orderRecordRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @Transactional
+    public OrderRecord updateOrderStatus(String orderId, String status) {
+        if (orderId == null || orderId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "orderId khong hop le");
+        }
+        if (status == null || status.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status khong hop le");
+        }
+
+        OrderRecord order = orderRecordRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay don hang"));
+
+        order.setStatus(status.trim().toLowerCase());
+        return orderRecordRepository.save(order);
+    }
+
+    public boolean hasPaidAccess(UserAccount user, String productId) {
+        if (productId == null || productId.isBlank()) {
+            return false;
+        }
+        List<OrderRecord> orders = getOrders(user);
+        for (OrderRecord order : orders) {
+            if (!"paid".equalsIgnoreCase(order.getStatus())) {
+                continue;
+            }
+            for (OrderItem item : order.getItems()) {
+                if (productId.equals(item.getProductId())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public ReviewRecord createReview(UserAccount user, CreateReviewRequest request) {

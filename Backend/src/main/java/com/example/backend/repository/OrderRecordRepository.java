@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface OrderRecordRepository extends JpaRepository<OrderRecord, String> {
     List<OrderRecord> findByUserIdOrderByCreatedAtDesc(String userId);
+
+    List<OrderRecord> findAllByOrderByCreatedAtDesc();
 }

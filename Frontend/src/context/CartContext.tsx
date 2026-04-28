@@ -1,8 +1,5 @@
 import React from "react";
-import {
-  CartItem,
-  findProductById,
-} from "data/sourceCatalog";
+import { CartItem } from "data/sourceCatalog";
 import { apiRequest, getToken } from "lib/api";
 import { useAuth } from "./AuthContext";
 
@@ -33,7 +30,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     apiRequest<CartItem[]>("/cart", { method: "GET" }, true)
       .then((list) => {
-        setItems(list.filter((item) => findProductById(item.productId) && item.quantity > 0));
+        setItems(list.filter((item) => item.quantity > 0));
       })
       .catch((error) => {
         console.warn("Failed to load cart", error);
@@ -47,11 +44,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, message: "Vui long dang nhap de su dung gio hang." };
     }
 
-    const product = findProductById(productId);
-    if (!product) {
-      return { success: false, message: "Source không tồn tại." };
-    }
-
     const response = await apiRequest<{ success: boolean; message: string; items: CartItem[] }>(
       "/cart/add",
       {
@@ -63,7 +55,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setItems(response.items);
 
-    return { success: true, message: response.message || `${product.title} đã được thêm vào giỏ hàng.` };
+    return { success: true, message: response.message || "Da them san pham vao gio hang." };
   }, []);
 
   const updateQuantity = React.useCallback(async (itemId: string, delta: number) => {
