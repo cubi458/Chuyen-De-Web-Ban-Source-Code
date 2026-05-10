@@ -17,7 +17,8 @@ import { Link, Navigate } from "react-router-dom";
 import StoreNavbar from "components/Navbars/StoreNavbar";
 import StoreFooter from "components/Footers/StoreFooter";
 import { useAuth } from "context/AuthContext";
-import { useOrders, Order } from "context/OrderContext";
+import { useOrders, Order, OrderItem } from "context/OrderContext";
+import { findProductById } from "data/sourceCatalog";
 
 function ProfilePage() {
     const { user, loading: authLoading, logout } = useAuth();
@@ -326,7 +327,7 @@ function ProfilePage() {
                         Chi tiết đơn hàng #{selectedOrder?.id?.slice(0, 8)}
                     </ModalHeader>
                     <ModalBody>
-                        {selectedOrder && (
+                                        {selectedOrder && (
                             <>
                                 <Row className="mb-4">
                                     <Col sm="6">
@@ -364,32 +365,53 @@ function ProfilePage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {selectedOrder.items.map((item) => (
-                                            <tr key={item.productId}>
-                                                <td>{item.productTitle}</td>
-                                                <td><Badge color="info">{item.license}</Badge></td>
-                                                <td>{item.quantity}</td>
-                                                <td className="text-right">${item.price * item.quantity}</td>
-                                            </tr>
-                                        ))}
+                                        {selectedOrder.items.map((item) => {
+                                            const resolved = (() => {
+                                                const fallback = findProductById(item.productId);
+                                                const title = item.productTitle && item.productTitle !== item.productId ? item.productTitle : (fallback ? fallback.title : item.productId);
+                                                const price = (typeof item.price === 'number' && item.price > 0) ? item.price : (fallback ? (fallback.price as number) || 0 : 0);
+                                                return { title, price };
+                                            })();
+                                            return (
+                                                <tr key={item.productId}>
+                                                    <td>{resolved.title}</td>
+                                                    <td><Badge color="info">{item.license}</Badge></td>
+                                                    <td>{item.quantity}</td>
+                                                    <td className="text-right">${(resolved.price * item.quantity).toFixed(2)}</td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                     <tfoot>
-                                        <tr>
-                                            <td colSpan={3} className="text-right">Tạm tính</td>
-                                            <td className="text-right">${selectedOrder.subtotal}</td>
-                                        </tr>
-                                        {selectedOrder.discountCode && (
-                                            <tr className="text-success">
-                                                <td colSpan={3} className="text-right">
-                                                    Giảm giá ({selectedOrder.discountCode})
-                                                </td>
-                                                <td className="text-right">-${selectedOrder.discountAmount}</td>
-                                            </tr>
-                                        )}
-                                        <tr className="font-weight-bold">
-                                            <td colSpan={3} className="text-right">Tổng cộng</td>
-                                            <td className="text-right text-info">${selectedOrder.total}</td>
-                                        </tr>
+                                        {(() => {
+                                            const computedSubtotal = selectedOrder.items.reduce((s, it) => {
+                                                const fallback = findProductById(it.productId);
+                                                const price = (typeof it.price === 'number' && it.price > 0) ? it.price : (fallback ? (fallback.price as number) || 0 : 0);
+                                                return s + price * it.quantity;
+                                            }, 0);
+                                            const displayedSubtotal = computedSubtotal || selectedOrder.subtotal || 0;
+                                            const displayedTotal = Math.max(0, displayedSubtotal - (selectedOrder.discountAmount || 0));
+                                            return (
+                                                <>
+                                                    <tr>
+                                                        <td colSpan={3} className="text-right">Tạm tính</td>
+                                                        <td className="text-right">${displayedSubtotal.toFixed(2)}</td>
+                                                    </tr>
+                                                    {selectedOrder.discountCode && (
+                                                        <tr className="text-success">
+                                                            <td colSpan={3} className="text-right">
+                                                                Giảm giá ({selectedOrder.discountCode})
+                                                            </td>
+                                                            <td className="text-right">-${(selectedOrder.discountAmount || 0).toFixed(2)}</td>
+                                                        </tr>
+                                                    )}
+                                                    <tr className="font-weight-bold">
+                                                        <td colSpan={3} className="text-right">Tổng cộng</td>
+                                                        <td className="text-right text-info">${displayedTotal.toFixed(2)}</td>
+                                                    </tr>
+                                                </>
+                                            );
+                                        })()}
                                     </tfoot>
                                 </Table>
 

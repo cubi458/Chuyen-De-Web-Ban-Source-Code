@@ -7698,6 +7698,42 @@ td.rdtYear:hover {
   border-radius: 50%;
 }
 
+/* Product detail header CTA buttons: equal width + centered vertical axis */
+.detail-cta-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* center buttons horizontally within the column */
+}
+.detail-cta-group .btn {
+  box-sizing: border-box;
+  width: 200px !important; /* enforce equal width */
+  height: 64px !important; /* fixed height to match screenshot */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0.75rem 0 !important;
+  text-align: center !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  border-radius: 8px !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+/* Ensure outline (neutral) button looks same size and inner spacing */
+.detail-cta-group .btn.btn-outline,
+.detail-cta-group .btn.btn-neutral {
+  background: transparent !important;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
+  border-width: 2px !important;
+}
+@media (max-width: 576px) {
+  .detail-cta-group .btn {
+    width: 100% !important;
+  }
+}
+
+
 .rdtCounters .rdtCounterSeparator {
   width: 0;
   border: 1px solid transparent;
