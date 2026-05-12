@@ -142,28 +142,28 @@ function CartPage() {
     <>
       <StoreNavbar />
       <div className="wrapper">
+        <div className="page-header page-header-small">
+          <div
+            className="page-header-image"
+            style={{ backgroundImage: "url(" + require("assets/img/bg8.jpg") + ")" }}
+          ></div>
+          <div className="content-center">
+            <Container fluid className="catalog-container">
+              <h1 className="title">Giỏ hàng</h1>
+              <p className="category">Quản lý license trước khi thanh toán.</p>
+            </Container>
+          </div>
+        </div>
+
         <div className="section">
           <Container>
             <Row className="mb-4 align-items-center">
-              <Col md="8">
-                <h2 className="title">Giỏ hàng</h2>
-                <p className="category">Quản lý license trước khi thanh toán.</p>
-              </Col>
+              <Col md="8"></Col>
               <Col
                 md="4"
                 className="text-md-right d-flex flex-wrap justify-content-md-end"
                 style={{ gap: "0.5rem" }}
-              >
-                <Button color="primary" tag={Link} to="/store/catalog" className="mb-2 ml-md-2">
-                  + Thêm source mới
-                </Button>
-                <Button color="link" tag={Link} to="/" className="mb-2">
-                  Về trang chủ
-                </Button>
-                <Button color="link" tag={Link} to="/store/profile" className="mb-2">
-                  Thông tin cá nhân
-                </Button>
-              </Col>
+              />
             </Row>
 
             <Row>
@@ -392,6 +392,8 @@ function CartPage() {
                       state={{
                         discountCode: appliedDiscount?.code,
                         discountAmount,
+                        subtotal,
+                        total,
                       }}
                       disabled={items.length === 0}
                     >

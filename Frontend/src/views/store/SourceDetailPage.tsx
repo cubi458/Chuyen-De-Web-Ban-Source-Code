@@ -205,14 +205,14 @@ function SourceDetailPage() {
                   <div className="text-warning h3 mb-0">${product.price}</div>
                 </Col>
                 <Col md="4" className="text-md-right text-center">
-                  <Button color="info" size="lg" className="mr-2">
-                    Mua ngay
-                  </Button>
-                  <Button color="neutral" outline size="lg" tag={Link} to="/store/catalog">
-                    Trở lại danh mục
-                  </Button>
-                  <div className="mt-3">
-                    <Button color="primary" onClick={handleAddToCart}>
+                  <div className="detail-cta-group">
+                    <Button color="info" size="lg">
+                      Mua ngay
+                    </Button>
+                    <Button color="neutral" outline size="lg" tag={Link} to="/store/catalog">
+                      Trở lại danh mục
+                    </Button>
+                    <Button color="primary" size="lg" onClick={handleAddToCart}>
                       + Thêm sản phẩm
                     </Button>
                   </div>

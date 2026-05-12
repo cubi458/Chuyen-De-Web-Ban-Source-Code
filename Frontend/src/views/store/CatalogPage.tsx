@@ -136,6 +136,13 @@ function CatalogPage() {
     if (products.length === 0) {
       return [] as Array<{ product: CatalogProduct; index: number }>;
     }
+
+    // If there are few products, don't duplicate them — show each once.
+    // For larger lists we can keep the original behaviour to create a looping carousel.
+    if (products.length <= 6) {
+      return products.map((product, index) => ({ product, index }));
+    }
+
     const target = Math.max(products.length * 2, 12);
     return Array.from({ length: target }, (_, index) => ({
       product: products[index % products.length],
