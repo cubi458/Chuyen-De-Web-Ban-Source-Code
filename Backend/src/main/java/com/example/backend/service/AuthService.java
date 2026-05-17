@@ -7,6 +7,7 @@ import com.example.backend.repository.VerificationTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
@@ -40,6 +41,7 @@ public class AuthService {
         this.verificationTokenRepository = verificationTokenRepository;
     }
 
+    @Transactional
     public UserAccount register(String email, String password, String displayName) {
         String normalizedEmail = normalizeEmail(email);
         if (userAccountRepository.existsByEmail(normalizedEmail)) {
@@ -61,6 +63,7 @@ public class AuthService {
         return user;
     }
 
+    @Transactional
     public void verifyEmail(String code) {
         VerificationToken token = verificationTokenRepository.findByCode(code)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ma xac thuc khong hop le hoac da het han"));
@@ -73,6 +76,7 @@ public class AuthService {
         verificationTokenRepository.delete(token);
     }
 
+    @Transactional
     public void resendVerification(String email) {
         UserAccount user = userAccountRepository.findByEmail(normalizeEmail(email))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay tai khoan"));

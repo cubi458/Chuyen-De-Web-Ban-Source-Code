@@ -29,6 +29,8 @@ import {
   DiscountCode,
 } from "data/discountCodes";
 
+// We will validate against backend endpoint; keep local helpers for fallback
+
 type DbProductResponse = {
   id: string;
   title: string;
@@ -48,6 +50,7 @@ function CartPage() {
   const [productsById, setProductsById] = React.useState<Record<string, CartProduct>>({});
   const [discountInput, setDiscountInput] = React.useState("");
   const [appliedDiscount, setAppliedDiscount] = React.useState<DiscountCode | null>(null);
+  const [serverDiscountAmount, setServerDiscountAmount] = React.useState<number | null>(null);
   const [discountFeedback, setDiscountFeedback] = React.useState<{
     type: "success" | "danger";
     message: string;
@@ -110,9 +113,11 @@ function CartPage() {
     return product ? sum + product.price * item.quantity : sum;
   }, 0);
 
-  const calculatedDiscount = appliedDiscount
-    ? calculateDiscount(appliedDiscount, subtotal)
-    : 0;
+  const calculatedDiscount = serverDiscountAmount !== null
+    ? serverDiscountAmount
+    : appliedDiscount
+      ? calculateDiscount(appliedDiscount, subtotal)
+      : 0;
   const discountAmount = Math.min(calculatedDiscount, subtotal);
   const total = Math.max(0, subtotal - discountAmount);
 
@@ -122,20 +127,50 @@ function CartPage() {
       return;
     }
 
-    const result = validateDiscountCode(discountInput, subtotal);
-    if (result.valid && result.discount) {
-      setAppliedDiscount(result.discount);
-      setDiscountFeedback({ type: "success", message: result.message });
-    } else {
-      setAppliedDiscount(null);
-      setDiscountFeedback({ type: "danger", message: result.message });
-    }
+    setDiscountFeedback(null);
+    setServerDiscountAmount(null);
+
+    apiRequest<{ valid: boolean; discountAmount: number; message: string; discount?: any }>(
+      "/discounts/validate",
+      {
+        method: "POST",
+        body: JSON.stringify({ code: discountInput.trim(), subtotal }),
+      },
+      false
+    )
+      .then((res) => {
+        if (res.valid) {
+          setAppliedDiscount(res.discount || { code: discountInput.trim() } as any);
+          setServerDiscountAmount(res.discountAmount || 0);
+          setDiscountFeedback({ type: "success", message: res.message || "Áp dụng thành công" });
+        } else {
+          setAppliedDiscount(null);
+          setServerDiscountAmount(null);
+          setDiscountFeedback({ type: "danger", message: res.message || "Mã không hợp lệ" });
+        }
+      })
+      .catch((err) => {
+        try {
+          const result = validateDiscountCode(discountInput, subtotal);
+          if (result.valid && result.discount) {
+            setAppliedDiscount(result.discount);
+            setDiscountFeedback({ type: "success", message: result.message });
+          } else {
+            setAppliedDiscount(null);
+            setDiscountFeedback({ type: "danger", message: result.message });
+          }
+        } catch (e) {
+          setAppliedDiscount(null);
+          setDiscountFeedback({ type: "danger", message: err?.message || "Lỗi khi xác thực mã" });
+        }
+      });
   };
 
   const handleRemoveDiscount = () => {
     setAppliedDiscount(null);
     setDiscountInput("");
     setDiscountFeedback(null);
+    setServerDiscountAmount(null);
   };
 
   return (
@@ -258,14 +293,17 @@ function CartPage() {
                   </CardHeader>
                   <CardBody>
                     {discountFeedback && (
-                      <Alert
-                        color={discountFeedback.type}
-                        toggle={() => setDiscountFeedback(null)}
-                        className="mb-3"
-                      >
-                        <i className={`now-ui-icons ${discountFeedback.type === "success" ? "ui-1_check" : "ui-1_simple-remove"} mr-2`}></i>
-                        {discountFeedback.message}
-                      </Alert>
+                      // Don't show the success Alert when a discount card is already displayed (avoid duplicate messages)
+                      !(appliedDiscount && discountFeedback.type === "success") && (
+                        <Alert
+                          color={discountFeedback.type}
+                          toggle={() => setDiscountFeedback(null)}
+                          className="mb-3"
+                        >
+                          <i className={`now-ui-icons ${discountFeedback.type === "success" ? "ui-1_check" : "ui-1_simple-remove"} mr-2`}></i>
+                          {discountFeedback.message}
+                        </Alert>
+                      )
                     )}
                     {appliedDiscount ? (
                       <div
@@ -339,14 +377,7 @@ function CartPage() {
                             >
                               NEWUSER <small className="text-success">-15%</small>
                             </Badge>
-                            <Badge
-                              color="light"
-                              className="mr-1 mb-1"
-                              style={{ cursor: "pointer" }}
-                              onClick={() => setDiscountInput("GIAM50K")}
-                            >
-                              GIAM50K <small className="text-success">-$50</small>
-                            </Badge>
+                            
                           </div>
                         </div>
                       </>

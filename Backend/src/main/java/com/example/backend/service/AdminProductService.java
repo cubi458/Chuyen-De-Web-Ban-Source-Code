@@ -6,6 +6,9 @@ import com.example.backend.repository.ProductRecordRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -62,6 +65,7 @@ public class AdminProductService {
         return filePath;
     }
 
+    @Transactional
     public void deleteProduct(String productId) {
         ProductRecord product = getProductById(productId);
         String zipPath = product.getZipFilePath();
@@ -74,13 +78,18 @@ public class AdminProductService {
 
         try {
             Path filePath = Paths.get(zipPath).toAbsolutePath().normalize();
-            Files.deleteIfExists(filePath);
-        } catch (IOException ignored) {
-            // Keep database deletion success even when zip file is already missing.
+            // If file deletion fails, throw to trigger transaction rollback
+            boolean deleted = Files.deleteIfExists(filePath);
+            if (!deleted && Files.exists(filePath)) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Khong the xoa file zip cua san pham");
+            }
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Khong the xoa file zip cua san pham", ex);
         }
     }
 
-    public ProductRecord createProduct(
+        @Transactional
+        public ProductRecord createProduct(
             UserAccount admin,
             String title,
             double price,
@@ -117,13 +126,33 @@ public class AdminProductService {
         record.setCreatedAt(Instant.now());
         record.setUpdatedAt(Instant.now());
 
+        // Persist record first (without zip info) to obtain DB state within transaction
+        ProductRecord saved = productRecordRepository.save(record);
+
         if (zipFile != null && !zipFile.isEmpty()) {
             String[] fileInfo = saveZipFile(zipFile);
-            record.setZipFileName(fileInfo[0]);
-            record.setZipFilePath(fileInfo[1]);
+            String savedName = fileInfo[0];
+            String savedPath = fileInfo[1];
+
+            // Register a synchronization to delete the file if transaction rolls back
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCompletion(int status) {
+                    if (status == STATUS_ROLLED_BACK) {
+                        try {
+                            Files.deleteIfExists(Paths.get(savedPath));
+                        } catch (IOException ignored) {
+                        }
+                    }
+                }
+            });
+
+            saved.setZipFileName(savedName);
+            saved.setZipFilePath(savedPath);
+            saved = productRecordRepository.save(saved);
         }
 
-        return productRecordRepository.save(record);
+        return saved;
     }
 
     private String[] saveZipFile(MultipartFile zipFile) {

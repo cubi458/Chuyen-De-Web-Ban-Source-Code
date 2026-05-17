@@ -19,15 +19,7 @@ export const sampleDiscountCodes: DiscountCode[] = [
         active: true,
         description: "Giảm 10% cho tất cả đơn hàng",
     },
-    {
-        code: "GIAM50K",
-        type: "fixed",
-        value: 50,
-        minOrder: 100,
-        expiryDate: "2025-12-31",
-        active: true,
-        description: "Giảm $50 cho đơn từ $100",
-    },
+    // GIAM50K removed from frontend available list
     {
         code: "NEWUSER",
         type: "percentage",
