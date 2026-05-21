@@ -32,6 +32,10 @@ jobs:
         working-directory: Frontend
         run: npm install
 
+      - name: Generate build id
+        working-directory: Frontend
+        run: node scripts/updateBuildId.js
+
       - name: Build
         working-directory: Frontend
         run: npm run build
