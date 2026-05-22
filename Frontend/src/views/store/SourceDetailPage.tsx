@@ -17,8 +17,8 @@ import StoreNavbar from "components/Navbars/StoreNavbar";
 import StoreFooter from "components/Footers/StoreFooter";
 import ReviewSection from "components/Reviews/ReviewSection";
 import { apiRequest } from "lib/api";
+import { resolveCoverImage, resolveDetailImages } from "lib/productImages";
 import { useCart } from "context/CartContext";
-import valueIllustration from "assets/img/Trang nen, anh gioi thieu, quang cao/top-code.jpg";
 
 type ProductDetail = {
   id: string;
@@ -29,6 +29,8 @@ type ProductDetail = {
   techStack?: string;
   repository?: string;
   description?: string;
+  coverImagePath?: string;
+  detailImagePaths?: string;
   zipFileName?: string;
   createdAt?: string;
 };
@@ -40,6 +42,15 @@ const categoryNameMap: Record<string, string> = {
   utility: "Công cụ & Automation",
   food: "F&B Experience",
   ai: "Creative AI",
+};
+
+const coverImageByCategory: Record<string, string> = {
+  commerce: require("assets/img/SourceCode Anh/source1.jpg"),
+  portal: require("assets/img/SourceCode Anh/source2.jpg"),
+  management: require("assets/img/SourceCode Anh/source3.jpg"),
+  utility: require("assets/img/SourceCode Anh/source4.jpg"),
+  food: require("assets/img/SourceCode Anh/source5.jpg"),
+  ai: require("assets/img/SourceCode Anh/source6.jpg"),
 };
 
 function SourceDetailPage() {
@@ -140,6 +151,26 @@ function SourceDetailPage() {
     return info;
   }, [product]);
 
+  const coverImage = React.useMemo(() => {
+    if (!product) {
+      return null;
+    }
+    return resolveCoverImage(
+      product.coverImagePath,
+      coverImageByCategory[product.categoryId] ||
+        require("assets/img/SourceCode Anh/source7.jpg")
+    );
+  }, [product]);
+
+  const detailImages = React.useMemo(() => {
+    if (!product) {
+      return [] as string[];
+    }
+    return resolveDetailImages(product.detailImagePaths);
+  }, [product]);
+
+  const heroImage = detailImages[0] || coverImage || require("assets/img/SourceCode Anh/source7.jpg");
+
   if (loading) {
     return (
       <>
@@ -183,7 +214,7 @@ function SourceDetailPage() {
           <div
             className="page-header-image"
             style={{
-              backgroundImage: `url(${valueIllustration})`,
+              backgroundImage: `url(${heroImage})`,
               filter: "brightness(0.4)",
             }}
           ></div>
@@ -242,7 +273,7 @@ function SourceDetailPage() {
                   <CardBody>
                     <img
                       alt={product.title}
-                      src={valueIllustration}
+                      src={heroImage}
                       className="img-raised rounded img-fluid"
                     />
                   </CardBody>

@@ -91,6 +91,8 @@ public class ProductController {
                 product.getTechStack(),
                 product.getRepository(),
                 product.getDescription(),
+            product.getCoverImagePath(),
+            product.getDetailImagePaths(),
                 product.getZipFileName(),
                 product.getCreatedAt()
         );
@@ -105,6 +107,8 @@ public class ProductController {
             String techStack,
             String repository,
             String description,
+            String coverImagePath,
+            String detailImagePaths,
             String zipFileName,
             Instant createdAt
     ) {
