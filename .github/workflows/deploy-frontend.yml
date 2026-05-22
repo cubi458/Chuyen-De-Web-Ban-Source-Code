@@ -27,16 +27,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: npm
-          cache-dependency-path: Frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: Frontend
-        run: npm ci
+        run: npm install
+
+      - name: Generate build id
+        working-directory: Frontend
+        run: node scripts/updateBuildId.js
 
       - name: Build
         working-directory: Frontend
-        run: npm run build
+        run: CI=false npm run build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

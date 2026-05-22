@@ -16,8 +16,10 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminProductService {
@@ -29,6 +31,13 @@ public class AdminProductService {
             "food",
             "ai"
     );
+
+        private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of(
+            "jpg",
+            "jpeg",
+            "png",
+            "webp"
+        );
 
     private final ProductRecordRepository productRecordRepository;
 
@@ -65,6 +74,8 @@ public class AdminProductService {
     public void deleteProduct(String productId) {
         ProductRecord product = getProductById(productId);
         String zipPath = product.getZipFilePath();
+        String coverPath = product.getCoverImagePath();
+        String detailPaths = product.getDetailImagePaths();
 
         productRecordRepository.delete(product);
 
@@ -78,6 +89,13 @@ public class AdminProductService {
         } catch (IOException ignored) {
             // Keep database deletion success even when zip file is already missing.
         }
+
+        deleteImageIfLocal(coverPath);
+        if (detailPaths != null && !detailPaths.isBlank()) {
+            for (String item : detailPaths.split(",")) {
+                deleteImageIfLocal(item.trim());
+            }
+        }
     }
 
     public ProductRecord createProduct(
@@ -88,7 +106,9 @@ public class AdminProductService {
             String techStack,
             String repository,
             String description,
-            MultipartFile zipFile
+            MultipartFile zipFile,
+            MultipartFile coverImage,
+            List<MultipartFile> detailImages
     ) {
         if (title == null || title.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tieu de san pham khong duoc de trong");
@@ -116,6 +136,19 @@ public class AdminProductService {
         record.setCreatedBy(admin.getId());
         record.setCreatedAt(Instant.now());
         record.setUpdatedAt(Instant.now());
+
+        if (coverImage != null && !coverImage.isEmpty()) {
+            record.setCoverImagePath(saveImageFile(coverImage, "covers"));
+        }
+
+        if (detailImages != null && !detailImages.isEmpty()) {
+            String detailPaths = detailImages.stream()
+                    .filter(Objects::nonNull)
+                    .filter(file -> !file.isEmpty())
+                    .map(file -> saveImageFile(file, "details"))
+                    .collect(Collectors.joining(","));
+            record.setDetailImagePaths(trimToNull(detailPaths));
+        }
 
         if (zipFile != null && !zipFile.isEmpty()) {
             String[] fileInfo = saveZipFile(zipFile);
@@ -147,6 +180,54 @@ public class AdminProductService {
             return new String[]{originalName, destination.toString()};
         } catch (IOException ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Khong the luu file zip", ex);
+        }
+    }
+
+    private String saveImageFile(MultipartFile imageFile, String subDir) {
+        String originalName = imageFile.getOriginalFilename() == null ? "image" : imageFile.getOriginalFilename();
+        String cleanName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
+        String extension = "";
+        int dotIndex = cleanName.lastIndexOf('.');
+        if (dotIndex >= 0) {
+            extension = cleanName.substring(dotIndex + 1).toLowerCase(Locale.ROOT);
+        }
+
+        if (!ALLOWED_IMAGE_EXTENSIONS.contains(extension)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chi ho tro file anh JPG/PNG/WebP");
+        }
+
+        String storedName = UUID.randomUUID() + "-" + cleanName;
+
+        try {
+            Path storageDir = Paths.get(productUploadDir, subDir).toAbsolutePath().normalize();
+            Files.createDirectories(storageDir);
+            Path destination = storageDir.resolve(storedName).normalize();
+            if (!destination.startsWith(storageDir)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ten file khong hop le");
+            }
+            imageFile.transferTo(destination);
+            return "/uploads/products/" + subDir + "/" + storedName;
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Khong the luu file anh", ex);
+        }
+    }
+
+    private void deleteImageIfLocal(String pathValue) {
+        if (pathValue == null || pathValue.isBlank()) {
+            return;
+        }
+        if (pathValue.startsWith("asset:")) {
+            return;
+        }
+        if (!pathValue.startsWith("/uploads/")) {
+            return;
+        }
+        String relativePath = pathValue.replaceFirst("^/", "");
+        try {
+            Path filePath = Paths.get(relativePath).toAbsolutePath().normalize();
+            Files.deleteIfExists(filePath);
+        } catch (IOException ignored) {
+            // Ignore delete errors for images.
         }
     }
 

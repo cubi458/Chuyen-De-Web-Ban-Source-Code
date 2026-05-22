@@ -47,7 +47,9 @@ public class AdminProductController {
             @RequestParam(required = false) String techStack,
             @RequestParam(required = false) String repository,
             @RequestParam(required = false) String description,
-            @RequestParam(required = false) MultipartFile zipFile
+            @RequestParam(required = false) MultipartFile zipFile,
+            @RequestParam(required = false) MultipartFile coverImage,
+            @RequestParam(required = false) List<MultipartFile> detailImages
     ) {
         UserAccount user = authService.getRequiredUser(authorization);
         requireAdmin(user);
@@ -60,7 +62,9 @@ public class AdminProductController {
                 techStack,
                 repository,
                 description,
-                zipFile
+            zipFile,
+            coverImage,
+            detailImages
         );
 
         return Map.of("success", true, "product", product);

@@ -15,6 +15,7 @@ import {
 import StoreNavbar from "components/Navbars/StoreNavbar";
 import StoreFooter from "components/Footers/StoreFooter";
 import { apiRequest } from "lib/api";
+import { resolveCoverImage } from "lib/productImages";
 import {
   sourceCategories,
 } from "data/sourceCatalog";
@@ -30,6 +31,8 @@ type DbProductResponse = {
   repository?: string;
   description?: string;
   zipFileName?: string;
+  coverImagePath?: string;
+  detailImagePaths?: string;
   createdAt?: string;
 };
 
@@ -66,7 +69,11 @@ const mapDbProductToCatalogProduct = (product: DbProductResponse): CatalogProduc
     price: product.price,
     categoryId: product.categoryId,
     technologies: technologies.length > 0 ? technologies : ["Source Code"],
-    coverImage: coverImageByCategory[product.categoryId] || require("assets/img/SourceCode Anh/source7.jpg"),
+    coverImage: resolveCoverImage(
+      product.coverImagePath,
+      coverImageByCategory[product.categoryId] ||
+        require("assets/img/SourceCode Anh/source7.jpg")
+    ),
   };
 };
 

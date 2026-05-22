@@ -30,6 +30,8 @@ type AdminProduct = {
   techStack?: string;
   repository?: string;
   description?: string;
+  coverImagePath?: string;
+  detailImagePaths?: string;
   zipFileName?: string;
   createdAt?: string;
 };
@@ -79,7 +81,13 @@ function AdminDashboard() {
   const [description, setDescription] = React.useState("");
   const [zipFile, setZipFile] = React.useState<File | null>(null);
   const [zipName, setZipName] = React.useState("chua-chon");
+  const [coverImage, setCoverImage] = React.useState<File | null>(null);
+  const [coverName, setCoverName] = React.useState("chua-chon");
+  const [detailImages, setDetailImages] = React.useState<File[]>([]);
+  const [detailNames, setDetailNames] = React.useState<string[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const coverInputRef = React.useRef<HTMLInputElement | null>(null);
+  const detailInputRef = React.useRef<HTMLInputElement | null>(null);
 
   React.useEffect(() => {
     document.body.classList.add("admin-page");
@@ -208,6 +216,14 @@ function AdminDashboard() {
       formData.append("techStack", newSource.techStack);
       formData.append("repository", newSource.repository);
       formData.append("description", description);
+      if (coverImage) {
+        formData.append("coverImage", coverImage);
+      }
+      if (detailImages.length > 0) {
+        detailImages.forEach((file) => {
+          formData.append("detailImages", file);
+        });
+      }
       if (zipFile) {
         formData.append("zipFile", zipFile);
       }
@@ -233,6 +249,16 @@ function AdminDashboard() {
       setDescription("");
       setZipFile(null);
       setZipName("chua-chon");
+      setCoverImage(null);
+      setCoverName("chua-chon");
+      setDetailImages([]);
+      setDetailNames([]);
+      if (coverInputRef.current) {
+        coverInputRef.current.value = "";
+      }
+      if (detailInputRef.current) {
+        detailInputRef.current.value = "";
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Khong the them san pham";
       setError(message);
@@ -385,6 +411,123 @@ function AdminDashboard() {
                           placeholder="Mô tả tính năng chính, hướng dẫn cài đặt, thông tin hỗ trợ..."
                         />
                       </FormGroup>
+
+                      <Row>
+                        <Col md="6">
+                          <FormGroup>
+                            <Label>Ảnh bìa (cover)</Label>
+                            <input
+                              ref={coverInputRef}
+                              className="d-none"
+                              type="file"
+                              accept="image/*"
+                              disabled={submitting}
+                              onChange={(e) => {
+                                const selected = e.target.files?.[0] ?? null;
+                                setCoverImage(selected);
+                                setCoverName(selected?.name ?? "chua-chon");
+                              }}
+                            />
+                            <div className="border rounded p-3" style={{ backgroundColor: "#f8f9fa" }}>
+                              <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                                <div className="mb-3 mb-md-0">
+                                  <div className="font-weight-bold">
+                                    {coverName === "chua-chon" ? "Chưa chọn ảnh bìa" : coverName}
+                                  </div>
+                                  <small className="text-muted">Định dạng: JPG, PNG, WebP</small>
+                                </div>
+                                <div>
+                                  <Button
+                                    type="button"
+                                    color="secondary"
+                                    className="mr-2"
+                                    disabled={submitting}
+                                    onClick={() => coverInputRef.current?.click()}
+                                  >
+                                    Chọn ảnh bìa
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    outline
+                                    color="danger"
+                                    disabled={submitting || coverName === "chua-chon"}
+                                    onClick={() => {
+                                      setCoverImage(null);
+                                      setCoverName("chua-chon");
+                                      if (coverInputRef.current) {
+                                        coverInputRef.current.value = "";
+                                      }
+                                    }}
+                                  >
+                                    Bỏ ảnh
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </FormGroup>
+                        </Col>
+                        <Col md="6">
+                          <FormGroup>
+                            <Label>Ảnh chi tiết (nhiều ảnh)</Label>
+                            <input
+                              ref={detailInputRef}
+                              className="d-none"
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              disabled={submitting}
+                              onChange={(e) => {
+                                const selected = Array.from(e.target.files ?? []);
+                                setDetailImages(selected);
+                                setDetailNames(selected.map((file) => file.name));
+                              }}
+                            />
+                            <div className="border rounded p-3" style={{ backgroundColor: "#f8f9fa" }}>
+                              <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                                <div className="mb-3 mb-md-0">
+                                  <div className="font-weight-bold">
+                                    {detailNames.length === 0
+                                      ? "Chưa chọn ảnh chi tiết"
+                                      : `${detailNames.length} ảnh đã chọn`}
+                                  </div>
+                                  {detailNames.length > 0 && (
+                                    <small className="text-muted">
+                                      {detailNames.slice(0, 2).join(", ")}
+                                      {detailNames.length > 2 ? "..." : ""}
+                                    </small>
+                                  )}
+                                </div>
+                                <div>
+                                  <Button
+                                    type="button"
+                                    color="secondary"
+                                    className="mr-2"
+                                    disabled={submitting}
+                                    onClick={() => detailInputRef.current?.click()}
+                                  >
+                                    Chọn ảnh chi tiết
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    outline
+                                    color="danger"
+                                    disabled={submitting || detailNames.length === 0}
+                                    onClick={() => {
+                                      setDetailImages([]);
+                                      setDetailNames([]);
+                                      if (detailInputRef.current) {
+                                        detailInputRef.current.value = "";
+                                      }
+                                    }}
+                                  >
+                                    Bỏ ảnh
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </FormGroup>
+                        </Col>
+                      </Row>
 
                       <Row>
                         <Col md="12">

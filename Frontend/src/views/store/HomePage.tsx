@@ -20,6 +20,7 @@ import {
 import StoreNavbar from "components/Navbars/StoreNavbar";
 import StoreFooter from "components/Footers/StoreFooter";
 import { apiRequest } from "lib/api";
+import { resolveCoverImage } from "lib/productImages";
 import {
   languageFilters,
   priceFilters,
@@ -27,7 +28,7 @@ import {
   sourceCategories,
 } from "data/sourceCatalog";
 import heroBackground from "assets/img/bg8.jpg";
-import valueIllustration from "assets/img/Trang nen, anh gioi thieu, quang cao/top-code.jpg";
+import valueIllustration from "assets/img/SourceCode Anh/source7.jpg";
 import { Chat } from "features/chat/components";
 import { useCart } from "context/CartContext";
 
@@ -41,6 +42,8 @@ type DbProductResponse = {
   repository?: string;
   description?: string;
   zipFileName?: string;
+  coverImagePath?: string;
+  detailImagePaths?: string;
   createdAt?: string;
 };
 
@@ -84,6 +87,15 @@ const detectLanguages = (techStack: string[]): string[] => {
   return result.length > 0 ? result : ["JavaScript"];
 };
 
+const coverImageByCategory: Record<string, string> = {
+  commerce: require("assets/img/SourceCode Anh/source1.jpg"),
+  portal: require("assets/img/SourceCode Anh/source2.jpg"),
+  management: require("assets/img/SourceCode Anh/source3.jpg"),
+  utility: require("assets/img/SourceCode Anh/source4.jpg"),
+  food: require("assets/img/SourceCode Anh/source5.jpg"),
+  ai: require("assets/img/SourceCode Anh/source6.jpg"),
+};
+
 const inferProjectType = (categoryId: string): string => {
   const map: Record<string, string> = {
     commerce: "Ecommerce",
@@ -116,7 +128,11 @@ const mapDbProductToHomeProduct = (product: DbProductResponse): HomeProduct => {
     projectType: inferProjectType(product.categoryId),
     technologies: technologies.length > 0 ? technologies : ["Source Code"],
     languages: detectLanguages(technologies),
-    coverImage: valueIllustration,
+    coverImage: resolveCoverImage(
+      product.coverImagePath,
+      coverImageByCategory[product.categoryId] ||
+        require("assets/img/SourceCode Anh/source7.jpg")
+    ),
   };
 };
 
