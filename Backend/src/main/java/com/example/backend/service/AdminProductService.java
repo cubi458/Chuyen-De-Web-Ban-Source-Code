@@ -159,6 +159,95 @@ public class AdminProductService {
         return productRecordRepository.save(record);
     }
 
+    public ProductRecord updateProduct(
+            UserAccount admin,
+            String productId,
+            String title,
+            Double price,
+            String categoryId,
+            String techStack,
+            String repository,
+            String description,
+            MultipartFile zipFile,
+            MultipartFile coverImage,
+            List<MultipartFile> detailImages
+    ) {
+        ProductRecord record = getProductById(productId);
+
+        if (title != null) {
+            String trimmedTitle = title.trim();
+            if (trimmedTitle.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tieu de san pham khong duoc de trong");
+            }
+            if (!trimmedTitle.equals(record.getTitle())) {
+                record.setTitle(trimmedTitle);
+                record.setSlug(generateUniqueSlug(trimmedTitle));
+            }
+        }
+
+        if (price != null) {
+            if (price < 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Gia san pham phai lon hon hoac bang 0");
+            }
+            record.setPrice(price);
+        }
+
+        if (categoryId != null) {
+            String normalizedCategoryId = categoryId.trim().toLowerCase(Locale.ROOT);
+            if (normalizedCategoryId.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh muc khong hop le");
+            }
+            if (!ALLOWED_CATEGORY_IDS.contains(normalizedCategoryId)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh muc khong nam trong he thong");
+            }
+            record.setCategoryId(normalizedCategoryId);
+        }
+
+        if (techStack != null) {
+            record.setTechStack(trimToNull(techStack));
+        }
+
+        if (repository != null) {
+            record.setRepository(trimToNull(repository));
+        }
+
+        if (description != null) {
+            record.setDescription(trimToNull(description));
+        }
+
+        if (coverImage != null && !coverImage.isEmpty()) {
+            deleteImageIfLocal(record.getCoverImagePath());
+            record.setCoverImagePath(saveImageFile(coverImage, "covers"));
+        }
+
+        if (detailImages != null && !detailImages.isEmpty()) {
+            String previousDetailPaths = record.getDetailImagePaths();
+            if (previousDetailPaths != null && !previousDetailPaths.isBlank()) {
+                for (String item : previousDetailPaths.split(",")) {
+                    deleteImageIfLocal(item.trim());
+                }
+            }
+            String detailPaths = detailImages.stream()
+                    .filter(Objects::nonNull)
+                    .filter(file -> !file.isEmpty())
+                    .map(file -> saveImageFile(file, "details"))
+                    .collect(Collectors.joining(","));
+            record.setDetailImagePaths(trimToNull(detailPaths));
+        }
+
+        if (zipFile != null && !zipFile.isEmpty()) {
+            deleteZipIfLocal(record.getZipFilePath());
+            String[] fileInfo = saveZipFile(zipFile);
+            record.setZipFileName(fileInfo[0]);
+            record.setZipFilePath(fileInfo[1]);
+        }
+
+        record.setUpdatedAt(Instant.now());
+        record.setCreatedBy(admin.getId());
+
+        return productRecordRepository.save(record);
+    }
+
     private String[] saveZipFile(MultipartFile zipFile) {
         String originalName = zipFile.getOriginalFilename() == null ? "product.zip" : zipFile.getOriginalFilename();
         String lowercaseName = originalName.toLowerCase(Locale.ROOT);
@@ -228,6 +317,18 @@ public class AdminProductService {
             Files.deleteIfExists(filePath);
         } catch (IOException ignored) {
             // Ignore delete errors for images.
+        }
+    }
+
+    private void deleteZipIfLocal(String pathValue) {
+        if (pathValue == null || pathValue.isBlank()) {
+            return;
+        }
+        try {
+            Path filePath = Paths.get(pathValue).toAbsolutePath().normalize();
+            Files.deleteIfExists(filePath);
+        } catch (IOException ignored) {
+            // Ignore delete errors for zip files.
         }
     }
 

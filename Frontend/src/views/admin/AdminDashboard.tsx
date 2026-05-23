@@ -11,6 +11,9 @@ import {
   FormGroup,
   Input,
   Label,
+  Modal,
+  ModalBody,
+  ModalHeader,
   Row,
   Table,
 } from "reactstrap";
@@ -69,6 +72,7 @@ function AdminDashboard() {
   const [submitting, setSubmitting] = React.useState(false);
   const [deletingProductId, setDeletingProductId] = React.useState<string | null>(null);
   const [confirmingOrderId, setConfirmingOrderId] = React.useState<string | null>(null);
+  const [editingProductId, setEditingProductId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
   const [newSource, setNewSource] = React.useState({
@@ -85,9 +89,26 @@ function AdminDashboard() {
   const [coverName, setCoverName] = React.useState("chua-chon");
   const [detailImages, setDetailImages] = React.useState<File[]>([]);
   const [detailNames, setDetailNames] = React.useState<string[]>([]);
+  const [editSource, setEditSource] = React.useState({
+    title: "",
+    price: "",
+    categoryId: sourceCategories[0].id,
+    techStack: "",
+    repository: "",
+  });
+  const [editDescription, setEditDescription] = React.useState("");
+  const [editZipFile, setEditZipFile] = React.useState<File | null>(null);
+  const [editZipName, setEditZipName] = React.useState("chua-chon");
+  const [editCoverImage, setEditCoverImage] = React.useState<File | null>(null);
+  const [editCoverName, setEditCoverName] = React.useState("chua-chon");
+  const [editDetailImages, setEditDetailImages] = React.useState<File[]>([]);
+  const [editDetailNames, setEditDetailNames] = React.useState<string[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const coverInputRef = React.useRef<HTMLInputElement | null>(null);
   const detailInputRef = React.useRef<HTMLInputElement | null>(null);
+  const editFileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const editCoverInputRef = React.useRef<HTMLInputElement | null>(null);
+  const editDetailInputRef = React.useRef<HTMLInputElement | null>(null);
 
   React.useEffect(() => {
     document.body.classList.add("admin-page");
@@ -192,6 +213,86 @@ function AdminDashboard() {
     return `${firstItemName} +${order.items.length - 1}`;
   };
 
+  const resetForm = () => {
+    setNewSource({
+      title: "",
+      price: "",
+      categoryId: sourceCategories[0].id,
+      techStack: "",
+      repository: "",
+    });
+    setDescription("");
+    setZipFile(null);
+    setZipName("chua-chon");
+    setCoverImage(null);
+    setCoverName("chua-chon");
+    setDetailImages([]);
+    setDetailNames([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    if (coverInputRef.current) {
+      coverInputRef.current.value = "";
+    }
+    if (detailInputRef.current) {
+      detailInputRef.current.value = "";
+    }
+  };
+
+  const resetEditForm = () => {
+    setEditingProductId(null);
+    setEditSource({
+      title: "",
+      price: "",
+      categoryId: sourceCategories[0].id,
+      techStack: "",
+      repository: "",
+    });
+    setEditDescription("");
+    setEditZipFile(null);
+    setEditZipName("chua-chon");
+    setEditCoverImage(null);
+    setEditCoverName("chua-chon");
+    setEditDetailImages([]);
+    setEditDetailNames([]);
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = "";
+    }
+    if (editCoverInputRef.current) {
+      editCoverInputRef.current.value = "";
+    }
+    if (editDetailInputRef.current) {
+      editDetailInputRef.current.value = "";
+    }
+  };
+
+  const startEditProduct = (product: AdminProduct) => {
+    setEditingProductId(product.id);
+    setEditSource({
+      title: product.title || "",
+      price: String(product.price ?? ""),
+      categoryId: product.categoryId || sourceCategories[0].id,
+      techStack: product.techStack || "",
+      repository: product.repository || "",
+    });
+    setEditDescription(product.description || "");
+    setEditZipFile(null);
+    setEditZipName(product.zipFileName || "chua-chon");
+    setEditCoverImage(null);
+    setEditCoverName(product.coverImagePath ? "Dang dung" : "chua-chon");
+    setEditDetailImages([]);
+    setEditDetailNames(product.detailImagePaths ? ["Dang dung"] : []);
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = "";
+    }
+    if (editCoverInputRef.current) {
+      editCoverInputRef.current.value = "";
+    }
+    if (editDetailInputRef.current) {
+      editDetailInputRef.current.value = "";
+    }
+  };
+
   const handleCreateProduct = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -239,33 +340,74 @@ function AdminDashboard() {
 
       setProducts((prev) => [result.product, ...prev]);
       setSuccess("Them san pham thanh cong va da luu vao database.");
-      setNewSource({
-        title: "",
-        price: "",
-        categoryId: sourceCategories[0].id,
-        techStack: "",
-        repository: "",
-      });
-      setDescription("");
-      setZipFile(null);
-      setZipName("chua-chon");
-      setCoverImage(null);
-      setCoverName("chua-chon");
-      setDetailImages([]);
-      setDetailNames([]);
-      if (coverInputRef.current) {
-        coverInputRef.current.value = "";
-      }
-      if (detailInputRef.current) {
-        detailInputRef.current.value = "";
-      }
+      resetForm();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Khong the them san pham";
+      const message = err instanceof Error ? err.message : "Khong the luu san pham";
       setError(message);
     } finally {
       setSubmitting(false);
     }
   };
+
+    const handleUpdateProduct = async (event: React.FormEvent) => {
+      event.preventDefault();
+      if (!editingProductId) {
+        return;
+      }
+      setError(null);
+      setSuccess(null);
+
+      if (!editSource.title.trim()) {
+        setError("Vui long nhap tieu de san pham");
+        return;
+      }
+
+      if (!editSource.price || Number(editSource.price) < 0) {
+        setError("Gia san pham khong hop le");
+        return;
+      }
+
+      try {
+        setSubmitting(true);
+        const formData = new FormData();
+        formData.append("title", editSource.title.trim());
+        formData.append("price", String(Number(editSource.price)));
+        formData.append("categoryId", editSource.categoryId);
+        formData.append("techStack", editSource.techStack);
+        formData.append("repository", editSource.repository);
+        formData.append("description", editDescription);
+        if (editCoverImage) {
+          formData.append("coverImage", editCoverImage);
+        }
+        if (editDetailImages.length > 0) {
+          editDetailImages.forEach((file) => {
+            formData.append("detailImages", file);
+          });
+        }
+        if (editZipFile) {
+          formData.append("zipFile", editZipFile);
+        }
+
+        const result = await apiRequest<{ success: boolean; product: AdminProduct }>(
+          `/admin/products/${editingProductId}`,
+          {
+            method: "PATCH",
+            body: formData,
+          },
+          true
+        );
+        setProducts((prev) =>
+          prev.map((item) => (item.id === editingProductId ? result.product : item))
+        );
+        setSuccess("Da cap nhat san pham thanh cong.");
+        resetEditForm();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Khong the luu san pham";
+        setError(message);
+      } finally {
+        setSubmitting(false);
+      }
+    };
 
   const handleDeleteProduct = async (product: AdminProduct) => {
     const confirmed = window.confirm(`Ban co chac chan muon xoa san pham "${product.title}"?`);
@@ -320,7 +462,9 @@ function AdminDashboard() {
                       {success && <div className="alert alert-success">{success}</div>}
 
                       <div className="alert alert-info mb-4">
-                        <strong>Cách upload:</strong> nhập thông tin sản phẩm, chọn file zip (nếu có), rồi bấm "Lưu sản phẩm".
+                        <strong>Cách upload:</strong> nhập thông tin sản phẩm, chọn ảnh/zip (nếu có), rồi bấm
+                        {" "}
+                        "Lưu sản phẩm".
                       </div>
 
                       <Row>
@@ -584,7 +728,7 @@ function AdminDashboard() {
                       </Row>
 
                       <Button color="primary" size="lg" block type="submit" disabled={submitting}>
-                        {submitting ? "Đang upload và lưu sản phẩm..." : "Lưu sản phẩm vào database"}
+                        {submitting ? "Đang lưu sản phẩm..." : "Lưu sản phẩm vào database"}
                       </Button>
                     </Form>
                   </CardBody>
@@ -626,6 +770,15 @@ function AdminDashboard() {
                           <td>{product.createdAt ? new Date(product.createdAt).toLocaleString() : "-"}</td>
                           <td className="text-right">
                             <Button
+                              color="info"
+                              size="sm"
+                              className="mr-2"
+                              disabled={submitting}
+                              onClick={() => startEditProduct(product)}
+                            >
+                              Sửa
+                            </Button>
+                            <Button
                               color="danger"
                               size="sm"
                               disabled={deletingProductId === product.id}
@@ -641,6 +794,300 @@ function AdminDashboard() {
                 )}
               </CardBody>
             </Card>
+
+            <Modal isOpen={Boolean(editingProductId)} toggle={resetEditForm} size="lg">
+              <ModalHeader toggle={resetEditForm}>Sửa sản phẩm</ModalHeader>
+              <ModalBody>
+                <Form id="edit-product-form" onSubmit={handleUpdateProduct}>
+                  {error && <div className="alert alert-danger">{error}</div>}
+                  {success && <div className="alert alert-success">{success}</div>}
+
+                  <Row>
+                    <Col md="6">
+                      <FormGroup>
+                        <Label>Tiêu đề</Label>
+                        <Input
+                          value={editSource.title}
+                          onChange={(e) =>
+                            setEditSource((prev) => ({ ...prev, title: e.target.value }))
+                          }
+                          disabled={submitting}
+                          placeholder="VD: Next.js SaaS Kit"
+                        />
+                      </FormGroup>
+                    </Col>
+                    <Col md="3">
+                      <FormGroup>
+                        <Label>Giá (USD)</Label>
+                        <Input
+                          type="number"
+                          value={editSource.price}
+                          onChange={(e) =>
+                            setEditSource((prev) => ({ ...prev, price: e.target.value }))
+                          }
+                          disabled={submitting}
+                          placeholder="79"
+                        />
+                      </FormGroup>
+                    </Col>
+                    <Col md="3">
+                      <FormGroup>
+                        <Label>Danh mục</Label>
+                        <Input
+                          type="select"
+                          value={editSource.categoryId}
+                          onChange={(e) =>
+                            setEditSource((prev) => ({ ...prev, categoryId: e.target.value }))
+                          }
+                          disabled={submitting}
+                        >
+                          {sourceCategories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                              {category.name}
+                            </option>
+                          ))}
+                        </Input>
+                      </FormGroup>
+                    </Col>
+                  </Row>
+
+                  <Row>
+                    <Col md="6">
+                      <FormGroup>
+                        <Label>Tech stack</Label>
+                        <Input
+                          value={editSource.techStack}
+                          onChange={(e) =>
+                            setEditSource((prev) => ({ ...prev, techStack: e.target.value }))
+                          }
+                          disabled={submitting}
+                          placeholder="React, Supabase, Tailwind"
+                        />
+                      </FormGroup>
+                    </Col>
+                    <Col md="6">
+                      <FormGroup>
+                        <Label>Repo / Figma / Tài liệu</Label>
+                        <Input
+                          value={editSource.repository}
+                          onChange={(e) =>
+                            setEditSource((prev) => ({ ...prev, repository: e.target.value }))
+                          }
+                          disabled={submitting}
+                          placeholder="https://github.com/..."
+                        />
+                      </FormGroup>
+                    </Col>
+                  </Row>
+
+                  <FormGroup>
+                    <Label>Mô tả sản phẩm</Label>
+                    <Input
+                      type="textarea"
+                      rows={5}
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      disabled={submitting}
+                      placeholder="Mô tả tính năng chính, hướng dẫn cài đặt, thông tin hỗ trợ..."
+                    />
+                  </FormGroup>
+
+                  <Row>
+                    <Col md="6">
+                      <FormGroup>
+                        <Label>Ảnh bìa (cover)</Label>
+                        <input
+                          ref={editCoverInputRef}
+                          className="d-none"
+                          type="file"
+                          accept="image/*"
+                          disabled={submitting}
+                          onChange={(e) => {
+                            const selected = e.target.files?.[0] ?? null;
+                            setEditCoverImage(selected);
+                            setEditCoverName(selected?.name ?? "chua-chon");
+                          }}
+                        />
+                        <div className="border rounded p-3" style={{ backgroundColor: "#f8f9fa" }}>
+                          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                            <div className="mb-3 mb-md-0">
+                              <div className="font-weight-bold">
+                                {editCoverName === "chua-chon" ? "Chưa chọn ảnh bìa" : editCoverName}
+                              </div>
+                              <small className="text-muted">Định dạng: JPG, PNG, WebP</small>
+                            </div>
+                            <div>
+                              <Button
+                                type="button"
+                                color="secondary"
+                                className="mr-2"
+                                disabled={submitting}
+                                onClick={() => editCoverInputRef.current?.click()}
+                              >
+                                Chọn ảnh bìa
+                              </Button>
+                              <Button
+                                type="button"
+                                outline
+                                color="danger"
+                                disabled={submitting || editCoverName === "chua-chon"}
+                                onClick={() => {
+                                  setEditCoverImage(null);
+                                  setEditCoverName("chua-chon");
+                                  if (editCoverInputRef.current) {
+                                    editCoverInputRef.current.value = "";
+                                  }
+                                }}
+                              >
+                                Bỏ ảnh
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </FormGroup>
+                    </Col>
+                    <Col md="6">
+                      <FormGroup>
+                        <Label>Ảnh chi tiết (nhiều ảnh)</Label>
+                        <input
+                          ref={editDetailInputRef}
+                          className="d-none"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          disabled={submitting}
+                          onChange={(e) => {
+                            const selected = Array.from(e.target.files ?? []);
+                            setEditDetailImages(selected);
+                            setEditDetailNames(selected.map((file) => file.name));
+                          }}
+                        />
+                        <div className="border rounded p-3" style={{ backgroundColor: "#f8f9fa" }}>
+                          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                            <div className="mb-3 mb-md-0">
+                              <div className="font-weight-bold">
+                                {editDetailNames.length === 0
+                                  ? "Chưa chọn ảnh chi tiết"
+                                  : `${editDetailNames.length} ảnh đã chọn`}
+                              </div>
+                              {editDetailNames.length > 0 && (
+                                <small className="text-muted">
+                                  {editDetailNames.slice(0, 2).join(", ")}
+                                  {editDetailNames.length > 2 ? "..." : ""}
+                                </small>
+                              )}
+                            </div>
+                            <div>
+                              <Button
+                                type="button"
+                                color="secondary"
+                                className="mr-2"
+                                disabled={submitting}
+                                onClick={() => editDetailInputRef.current?.click()}
+                              >
+                                Chọn ảnh chi tiết
+                              </Button>
+                              <Button
+                                type="button"
+                                outline
+                                color="danger"
+                                disabled={submitting || editDetailNames.length === 0}
+                                onClick={() => {
+                                  setEditDetailImages([]);
+                                  setEditDetailNames([]);
+                                  if (editDetailInputRef.current) {
+                                    editDetailInputRef.current.value = "";
+                                  }
+                                }}
+                              >
+                                Bỏ ảnh
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </FormGroup>
+                    </Col>
+                  </Row>
+
+                  <Row>
+                    <Col md="12">
+                      <FormGroup>
+                        <Label>File sản phẩm (.zip)</Label>
+                        <input
+                          ref={editFileInputRef}
+                          className="d-none"
+                          type="file"
+                          accept=".zip"
+                          disabled={submitting}
+                          onChange={(e) => {
+                            const selected = e.target.files?.[0] ?? null;
+                            setEditZipFile(selected);
+                            setEditZipName(selected?.name ?? "chua-chon");
+                          }}
+                        />
+                        <div className="border rounded p-3" style={{ backgroundColor: "#f8f9fa" }}>
+                          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                            <div className="mb-3 mb-md-0">
+                              <div className="font-weight-bold">
+                                {editZipName === "chua-chon" ? "Chưa chọn file ZIP" : editZipName}
+                              </div>
+                              <small className="text-muted">Định dạng hỗ trợ: .zip</small>
+                            </div>
+                            <div>
+                              <Button
+                                type="button"
+                                color="secondary"
+                                className="mr-2"
+                                disabled={submitting}
+                                onClick={() => editFileInputRef.current?.click()}
+                              >
+                                Chọn file ZIP
+                              </Button>
+                              <Button
+                                type="button"
+                                outline
+                                color="danger"
+                                disabled={submitting || editZipName === "chua-chon"}
+                                onClick={() => {
+                                  setEditZipFile(null);
+                                  setEditZipName("chua-chon");
+                                  if (editFileInputRef.current) {
+                                    editFileInputRef.current.value = "";
+                                  }
+                                }}
+                              >
+                                Bỏ file
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </FormGroup>
+                    </Col>
+                  </Row>
+
+                  <Row>
+                    <Col md="8">
+                      <Button color="primary" size="lg" block type="submit" disabled={submitting}>
+                        {submitting ? "Đang lưu sản phẩm..." : "Cập nhật sản phẩm"}
+                      </Button>
+                    </Col>
+                    <Col md="4" className="mt-2 mt-md-0">
+                      <Button
+                        color="secondary"
+                        outline
+                        size="lg"
+                        block
+                        type="button"
+                        disabled={submitting}
+                        onClick={resetEditForm}
+                      >
+                        Đóng
+                      </Button>
+                    </Col>
+                  </Row>
+                </Form>
+              </ModalBody>
+            </Modal>
 
             <Card className="mt-4">
               <CardHeader>
