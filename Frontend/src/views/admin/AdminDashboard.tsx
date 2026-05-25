@@ -64,17 +64,33 @@ type AdminOrder = {
   createdAt: string;
 };
 
+type AdminUser = {
+  id: string;
+  email: string;
+  displayName?: string;
+  role: string;
+  emailVerified: boolean;
+  createdAt?: string;
+};
+
 function AdminDashboard() {
   const [orders, setOrders] = React.useState<AdminOrder[]>([]);
   const [products, setProducts] = React.useState<AdminProduct[]>([]);
+  const [users, setUsers] = React.useState<AdminUser[]>([]);
   const [loadingProducts, setLoadingProducts] = React.useState(true);
+  const [loadingUsers, setLoadingUsers] = React.useState(true);
   const [loadingOrders, setLoadingOrders] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
   const [deletingProductId, setDeletingProductId] = React.useState<string | null>(null);
   const [confirmingOrderId, setConfirmingOrderId] = React.useState<string | null>(null);
   const [editingProductId, setEditingProductId] = React.useState<string | null>(null);
+  const [userModalOpen, setUserModalOpen] = React.useState(false);
+  const [editingUser, setEditingUser] = React.useState<AdminUser | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
+  const [userError, setUserError] = React.useState<string | null>(null);
+  const [userSuccess, setUserSuccess] = React.useState<string | null>(null);
+  const [userSubmitting, setUserSubmitting] = React.useState(false);
   const [newSource, setNewSource] = React.useState({
     title: "",
     price: "",
@@ -103,6 +119,13 @@ function AdminDashboard() {
   const [editCoverName, setEditCoverName] = React.useState("chua-chon");
   const [editDetailImages, setEditDetailImages] = React.useState<File[]>([]);
   const [editDetailNames, setEditDetailNames] = React.useState<string[]>([]);
+  const [userForm, setUserForm] = React.useState({
+    email: "",
+    displayName: "",
+    role: "customer",
+    password: "",
+    emailVerified: false,
+  });
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const coverInputRef = React.useRef<HTMLInputElement | null>(null);
   const detailInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -127,7 +150,7 @@ function AdminDashboard() {
         const result = await apiRequest<AdminProduct[]>("/admin/products", { method: "GET" }, true);
         setProducts(result);
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Khong the tai danh sach san pham";
+        const message = err instanceof Error ? err.message : "Không thể tải danh sách sản phẩm";
         setError(message);
       } finally {
         setLoadingProducts(false);
@@ -137,6 +160,29 @@ function AdminDashboard() {
     loadProducts();
   }, []);
 
+  const loadUsers = React.useCallback(async () => {
+    try {
+      setLoadingUsers(true);
+      setUserError(null);
+      const result = await apiRequest<AdminUser[] | { users?: AdminUser[] }>(
+        "/admin/users",
+        { method: "GET" },
+        true
+      );
+      const list = Array.isArray(result) ? result : result.users ?? [];
+      setUsers(list);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể tải danh sách tài khoản";
+      setUserError(message);
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
   React.useEffect(() => {
     const loadOrders = async () => {
       try {
@@ -144,7 +190,7 @@ function AdminDashboard() {
         const result = await apiRequest<AdminOrder[]>('/admin/orders', { method: 'GET' }, true);
         setOrders(result);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Khong the tai danh sach don hang';
+        const message = err instanceof Error ? err.message : 'Không thể tải danh sách đơn hàng';
         setError(message);
       } finally {
         setLoadingOrders(false);
@@ -153,6 +199,118 @@ function AdminDashboard() {
 
     loadOrders();
   }, []);
+
+  const openCreateUser = () => {
+    setEditingUser(null);
+    setUserForm({
+      email: "",
+      displayName: "",
+      role: "customer",
+      password: "",
+      emailVerified: false,
+    });
+    setUserError(null);
+    setUserSuccess(null);
+    setUserModalOpen(true);
+  };
+
+  const openEditUser = (user: AdminUser) => {
+    setEditingUser(user);
+    setUserForm({
+      email: user.email,
+      displayName: user.displayName ?? "",
+      role: user.role,
+      password: "",
+      emailVerified: user.emailVerified,
+    });
+    setUserError(null);
+    setUserSuccess(null);
+    setUserModalOpen(true);
+  };
+
+  const closeUserModal = () => {
+    setUserModalOpen(false);
+    setEditingUser(null);
+    setUserError(null);
+    setUserSuccess(null);
+    setUserSubmitting(false);
+  };
+
+  const submitUserForm = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setUserError(null);
+    setUserSuccess(null);
+
+    if (!userForm.email.trim()) {
+      setUserError("Email không được để trống");
+      return;
+    }
+    if (!editingUser && !userForm.password.trim()) {
+      setUserError("Mật khẩu không được để trống");
+      return;
+    }
+
+    try {
+      setUserSubmitting(true);
+      if (editingUser) {
+        const payload: Record<string, unknown> = {
+          email: userForm.email,
+          displayName: userForm.displayName,
+          role: userForm.role,
+          emailVerified: userForm.emailVerified,
+        };
+        if (userForm.password.trim()) {
+          payload.password = userForm.password;
+        }
+        const result = await apiRequest<{ user: AdminUser }>(
+          `/admin/users/${editingUser.id}`,
+          { method: "PATCH", body: JSON.stringify(payload) },
+          true
+        );
+        setUsers((prev) => prev.map((item) => (item.id === result.user.id ? result.user : item)));
+        setUserSuccess("Đã cập nhật tài khoản");
+      } else {
+        const result = await apiRequest<{ user: AdminUser }>(
+          "/admin/users",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              email: userForm.email,
+              password: userForm.password,
+              displayName: userForm.displayName,
+              role: userForm.role,
+              emailVerified: userForm.emailVerified,
+            }),
+          },
+          true
+        );
+        setUsers((prev) => [result.user, ...prev]);
+        setUserSuccess("Đã tạo tài khoản mới");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể cập nhật tài khoản";
+      setUserError(message);
+    } finally {
+      setUserSubmitting(false);
+    }
+  };
+
+  const deleteUser = async (user: AdminUser) => {
+    const confirmed = window.confirm(`Bạn chắc chắn muốn xóa tài khoản ${user.email}?`);
+    if (!confirmed) {
+      return;
+    }
+    setUserError(null);
+    setUserSuccess(null);
+    try {
+      await apiRequest(`/admin/users/${user.id}`, { method: "DELETE" }, true);
+      setUsers((prev) => prev.filter((item) => item.id !== user.id));
+      setUserSuccess("Đã xóa tài khoản");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể xóa tài khoản";
+      setUserError(message);
+    }
+  };
 
   const confirmOrder = async (orderId: string) => {
     setError(null);
@@ -171,7 +329,7 @@ function AdminDashboard() {
       setOrders((prev) => prev.map((order) => (order.id === orderId ? updated : order)));
       setSuccess(`Đã xác nhận thanh toán cho đơn ${orderId}.`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Khong the xac nhan don hang";
+      const message = err instanceof Error ? err.message : "Không thể xác nhận đơn hàng";
       setError(message);
     } finally {
       setConfirmingOrderId(null);
@@ -279,9 +437,9 @@ function AdminDashboard() {
     setEditZipFile(null);
     setEditZipName(product.zipFileName || "chua-chon");
     setEditCoverImage(null);
-    setEditCoverName(product.coverImagePath ? "Dang dung" : "chua-chon");
+    setEditCoverName(product.coverImagePath ? "Đang dùng" : "chua-chon");
     setEditDetailImages([]);
-    setEditDetailNames(product.detailImagePaths ? ["Dang dung"] : []);
+    setEditDetailNames(product.detailImagePaths ? ["Đang dùng"] : []);
     if (editFileInputRef.current) {
       editFileInputRef.current.value = "";
     }
@@ -299,12 +457,12 @@ function AdminDashboard() {
     setSuccess(null);
 
     if (!newSource.title.trim()) {
-      setError("Vui long nhap tieu de san pham");
+      setError("Vui lòng nhập tiêu đề sản phẩm");
       return;
     }
 
     if (!newSource.price || Number(newSource.price) < 0) {
-      setError("Gia san pham khong hop le");
+      setError("Giá sản phẩm không hợp lệ");
       return;
     }
 
@@ -339,10 +497,10 @@ function AdminDashboard() {
       );
 
       setProducts((prev) => [result.product, ...prev]);
-      setSuccess("Them san pham thanh cong va da luu vao database.");
+      setSuccess("Thêm sản phẩm thành công và đã lưu vào database.");
       resetForm();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Khong the luu san pham";
+      const message = err instanceof Error ? err.message : "Không thể lưu sản phẩm";
       setError(message);
     } finally {
       setSubmitting(false);
@@ -358,12 +516,12 @@ function AdminDashboard() {
       setSuccess(null);
 
       if (!editSource.title.trim()) {
-        setError("Vui long nhap tieu de san pham");
+        setError("Vui lòng nhập tiêu đề sản phẩm");
         return;
       }
 
       if (!editSource.price || Number(editSource.price) < 0) {
-        setError("Gia san pham khong hop le");
+        setError("Giá sản phẩm không hợp lệ");
         return;
       }
 
@@ -399,10 +557,10 @@ function AdminDashboard() {
         setProducts((prev) =>
           prev.map((item) => (item.id === editingProductId ? result.product : item))
         );
-        setSuccess("Da cap nhat san pham thanh cong.");
+        setSuccess("Đã cập nhật sản phẩm thành công.");
         resetEditForm();
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Khong the luu san pham";
+        const message = err instanceof Error ? err.message : "Không thể lưu sản phẩm";
         setError(message);
       } finally {
         setSubmitting(false);
@@ -410,7 +568,7 @@ function AdminDashboard() {
     };
 
   const handleDeleteProduct = async (product: AdminProduct) => {
-    const confirmed = window.confirm(`Ban co chac chan muon xoa san pham "${product.title}"?`);
+    const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${product.title}"?`);
     if (!confirmed) {
       return;
     }
@@ -426,9 +584,9 @@ function AdminDashboard() {
         true
       );
       setProducts((prev) => prev.filter((item) => item.id !== product.id));
-      setSuccess("Da xoa san pham thanh cong.");
+      setSuccess("Đã xóa sản phẩm thành công.");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Khong the xoa san pham";
+      const message = err instanceof Error ? err.message : "Không thể xóa sản phẩm";
       setError(message);
     } finally {
       setDeletingProductId(null);
@@ -742,9 +900,9 @@ function AdminDashboard() {
               </CardHeader>
               <CardBody className="table-responsive">
                 {loadingProducts ? (
-                  <div>Dang tai danh sach san pham...</div>
+                  <div>Đang tải danh sách sản phẩm...</div>
                 ) : products.length === 0 ? (
-                  <div className="text-muted">Chua co san pham nao trong database.</div>
+                  <div className="text-muted">Chưa có sản phẩm nào trong database.</div>
                 ) : (
                   <Table>
                     <thead>
@@ -766,7 +924,7 @@ function AdminDashboard() {
                           </td>
                           <td>${product.price}</td>
                           <td>{product.categoryId}</td>
-                          <td>{product.zipFileName || "Khong co"}</td>
+                          <td>{product.zipFileName || "Không có"}</td>
                           <td>{product.createdAt ? new Date(product.createdAt).toLocaleString() : "-"}</td>
                           <td className="text-right">
                             <Button
@@ -784,7 +942,7 @@ function AdminDashboard() {
                               disabled={deletingProductId === product.id}
                               onClick={() => handleDeleteProduct(product)}
                             >
-                              {deletingProductId === product.id ? "Dang xoa..." : "Xoa"}
+                              {deletingProductId === product.id ? "Đang xóa..." : "Xóa"}
                             </Button>
                           </td>
                         </tr>
@@ -1074,7 +1232,6 @@ function AdminDashboard() {
                     <Col md="4" className="mt-2 mt-md-0">
                       <Button
                         color="secondary"
-                        outline
                         size="lg"
                         block
                         type="button"
@@ -1091,13 +1248,196 @@ function AdminDashboard() {
 
             <Card className="mt-4">
               <CardHeader>
+                <Row className="align-items-center">
+                  <Col md="8">
+                    <h4 className="mb-0">Tài khoản người dùng</h4>
+                  </Col>
+                  <Col md="4" className="text-md-right mt-3 mt-md-0">
+                    <Button
+                      color="secondary"
+                      outline
+                      className="mr-2"
+                      onClick={loadUsers}
+                      disabled={loadingUsers}
+                    >
+                      Tải lại
+                    </Button>
+                    <Button color="primary" onClick={openCreateUser}>
+                      Tạo tài khoản
+                    </Button>
+                  </Col>
+                </Row>
+              </CardHeader>
+              <CardBody className="table-responsive">
+                {userError && <div className="alert alert-danger">{userError}</div>}
+                {userSuccess && <div className="alert alert-success">{userSuccess}</div>}
+                {loadingUsers ? (
+                  <div>Đang tải danh sách tài khoản...</div>
+                ) : users.length === 0 ? (
+                  <div className="text-muted">Chưa có tài khoản nào trong database.</div>
+                ) : (
+                  <Table>
+                    <thead>
+                      <tr>
+                        <th>Email</th>
+                        <th>Tên hiển thị</th>
+                        <th>Vai trò</th>
+                        <th>Xác thực</th>
+                        <th>Ngày tạo</th>
+                        <th className="text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((user) => {
+                        const roleLabel = (user.role || "customer").toLowerCase();
+                        const displayRole = roleLabel === "admin" ? "ADMIN" : "CUSTOMER";
+                        const badgeColor = roleLabel === "admin" ? "info" : "info";
+                        return (
+                        <tr key={user.id}>
+                          <td>{user.email}</td>
+                          <td>{user.displayName || "-"}</td>
+                          <td>
+                            <Badge color={badgeColor}>
+                              {displayRole}
+                            </Badge>
+                          </td>
+                          <td>
+                            <Badge color={user.emailVerified ? "success" : "warning"}>
+                              {user.emailVerified ? "Đã xác thực" : "Chưa xác thực"}
+                            </Badge>
+                          </td>
+                          <td>{formatDate(user.createdAt)}</td>
+                          <td className="text-right">
+                            <Button
+                              color="info"
+                              size="sm"
+                              className="mr-2"
+                              onClick={() => openEditUser(user)}
+                            >
+                              Sửa
+                            </Button>
+                            <Button
+                              color="danger"
+                              size="sm"
+                              onClick={() => deleteUser(user)}
+                            >
+                              Xóa
+                            </Button>
+                          </td>
+                        </tr>
+                        );
+                      })}
+                    </tbody>
+                  </Table>
+                )}
+              </CardBody>
+            </Card>
+
+            <Modal isOpen={userModalOpen} toggle={closeUserModal} size="lg">
+              <ModalHeader toggle={closeUserModal}>
+                {editingUser ? "Sửa tài khoản" : "Tạo tài khoản"}
+              </ModalHeader>
+              <ModalBody>
+                <Form onSubmit={submitUserForm}>
+                  {userError && <div className="alert alert-danger">{userError}</div>}
+                  {userSuccess && <div className="alert alert-success">{userSuccess}</div>}
+
+                  <Row>
+                    <Col md="6">
+                      <FormGroup>
+                        <Label>Email</Label>
+                        <Input
+                          type="email"
+                          value={userForm.email}
+                          onChange={(e) => setUserForm((prev) => ({ ...prev, email: e.target.value }))}
+                          disabled={userSubmitting}
+                          placeholder="email@example.com"
+                        />
+                      </FormGroup>
+                    </Col>
+                    <Col md="6">
+                      <FormGroup>
+                        <Label>Tên hiển thị</Label>
+                        <Input
+                          value={userForm.displayName}
+                          onChange={(e) =>
+                            setUserForm((prev) => ({ ...prev, displayName: e.target.value }))
+                          }
+                          disabled={userSubmitting}
+                          placeholder="Nguyen Van A"
+                        />
+                      </FormGroup>
+                    </Col>
+                  </Row>
+
+                  <Row>
+                    <Col md="6">
+                      <FormGroup>
+                        <Label>Vai trò</Label>
+                        <Input
+                          type="select"
+                          value={userForm.role}
+                          onChange={(e) => setUserForm((prev) => ({ ...prev, role: e.target.value }))}
+                          disabled={userSubmitting}
+                        >
+                          <option value="customer">customer</option>
+                          <option value="admin">admin</option>
+                        </Input>
+                      </FormGroup>
+                    </Col>
+                    <Col md="6">
+                      <FormGroup>
+                        <Label>Mật khẩu {editingUser ? "(bỏ trống nếu không đổi)" : ""}</Label>
+                        <Input
+                          type="password"
+                          value={userForm.password}
+                          onChange={(e) => setUserForm((prev) => ({ ...prev, password: e.target.value }))}
+                          disabled={userSubmitting}
+                          placeholder={editingUser ? "Nhập mật khẩu mới" : "Mật khẩu"}
+                        />
+                      </FormGroup>
+                    </Col>
+                  </Row>
+
+                  <FormGroup check>
+                    <Label check>
+                      <Input
+                        type="checkbox"
+                        checked={userForm.emailVerified}
+                        onChange={(e) =>
+                          setUserForm((prev) => ({ ...prev, emailVerified: e.target.checked }))
+                        }
+                        disabled={userSubmitting}
+                      />
+                      Đã xác thực email
+                    </Label>
+                  </FormGroup>
+
+                  <Row className="mt-4">
+                    <Col md="8">
+                      <Button color="primary" size="lg" block type="submit" disabled={userSubmitting}>
+                        {userSubmitting ? "Đang lưu..." : editingUser ? "Cập nhật" : "Tạo tài khoản"}
+                      </Button>
+                    </Col>
+                    <Col md="4" className="mt-2 mt-md-0">
+                      <Button color="secondary" size="lg" block type="button" onClick={closeUserModal}>
+                        Đóng
+                      </Button>
+                    </Col>
+                  </Row>
+                </Form>
+              </ModalBody>
+            </Modal>
+
+            <Card className="mt-4">
+              <CardHeader>
                 <h4 className="mb-0">Đơn hàng gần đây</h4>
               </CardHeader>
               <CardBody className="table-responsive">
                 {loadingOrders ? (
-                  <div>Dang tai danh sach don hang...</div>
+                  <div>Đang tải danh sách đơn hàng...</div>
                 ) : orders.length === 0 ? (
-                  <div className="text-muted">Chua co don hang nao trong database.</div>
+                  <div className="text-muted">Chưa có đơn hàng nào trong database.</div>
                 ) : (
                 <Table>
                   <thead>
