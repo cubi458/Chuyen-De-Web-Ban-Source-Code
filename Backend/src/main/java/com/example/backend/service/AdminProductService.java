@@ -19,8 +19,10 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminProductService {
@@ -32,6 +34,13 @@ public class AdminProductService {
             "food",
             "ai"
     );
+
+        private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of(
+            "jpg",
+            "jpeg",
+            "png",
+            "webp"
+        );
 
     private final ProductRecordRepository productRecordRepository;
 
@@ -69,6 +78,8 @@ public class AdminProductService {
     public void deleteProduct(String productId) {
         ProductRecord product = getProductById(productId);
         String zipPath = product.getZipFilePath();
+        String coverPath = product.getCoverImagePath();
+        String detailPaths = product.getDetailImagePaths();
 
         productRecordRepository.delete(product);
 
@@ -86,6 +97,13 @@ public class AdminProductService {
         } catch (IOException ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Khong the xoa file zip cua san pham", ex);
         }
+
+        deleteImageIfLocal(coverPath);
+        if (detailPaths != null && !detailPaths.isBlank()) {
+            for (String item : detailPaths.split(",")) {
+                deleteImageIfLocal(item.trim());
+            }
+        }
     }
 
         @Transactional
@@ -97,7 +115,9 @@ public class AdminProductService {
             String techStack,
             String repository,
             String description,
-            MultipartFile zipFile
+            MultipartFile zipFile,
+            MultipartFile coverImage,
+            List<MultipartFile> detailImages
     ) {
         if (title == null || title.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tieu de san pham khong duoc de trong");
@@ -128,6 +148,18 @@ public class AdminProductService {
 
         // Persist record first (without zip info) to obtain DB state within transaction
         ProductRecord saved = productRecordRepository.save(record);
+        if (coverImage != null && !coverImage.isEmpty()) {
+            record.setCoverImagePath(saveImageFile(coverImage, "covers"));
+        }
+
+        if (detailImages != null && !detailImages.isEmpty()) {
+            String detailPaths = detailImages.stream()
+                    .filter(Objects::nonNull)
+                    .filter(file -> !file.isEmpty())
+                    .map(file -> saveImageFile(file, "details"))
+                    .collect(Collectors.joining(","));
+            record.setDetailImagePaths(trimToNull(detailPaths));
+        }
 
         if (zipFile != null && !zipFile.isEmpty()) {
             String[] fileInfo = saveZipFile(zipFile);
@@ -155,6 +187,95 @@ public class AdminProductService {
         return saved;
     }
 
+    public ProductRecord updateProduct(
+            UserAccount admin,
+            String productId,
+            String title,
+            Double price,
+            String categoryId,
+            String techStack,
+            String repository,
+            String description,
+            MultipartFile zipFile,
+            MultipartFile coverImage,
+            List<MultipartFile> detailImages
+    ) {
+        ProductRecord record = getProductById(productId);
+
+        if (title != null) {
+            String trimmedTitle = title.trim();
+            if (trimmedTitle.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tieu de san pham khong duoc de trong");
+            }
+            if (!trimmedTitle.equals(record.getTitle())) {
+                record.setTitle(trimmedTitle);
+                record.setSlug(generateUniqueSlug(trimmedTitle));
+            }
+        }
+
+        if (price != null) {
+            if (price < 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Gia san pham phai lon hon hoac bang 0");
+            }
+            record.setPrice(price);
+        }
+
+        if (categoryId != null) {
+            String normalizedCategoryId = categoryId.trim().toLowerCase(Locale.ROOT);
+            if (normalizedCategoryId.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh muc khong hop le");
+            }
+            if (!ALLOWED_CATEGORY_IDS.contains(normalizedCategoryId)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh muc khong nam trong he thong");
+            }
+            record.setCategoryId(normalizedCategoryId);
+        }
+
+        if (techStack != null) {
+            record.setTechStack(trimToNull(techStack));
+        }
+
+        if (repository != null) {
+            record.setRepository(trimToNull(repository));
+        }
+
+        if (description != null) {
+            record.setDescription(trimToNull(description));
+        }
+
+        if (coverImage != null && !coverImage.isEmpty()) {
+            deleteImageIfLocal(record.getCoverImagePath());
+            record.setCoverImagePath(saveImageFile(coverImage, "covers"));
+        }
+
+        if (detailImages != null && !detailImages.isEmpty()) {
+            String previousDetailPaths = record.getDetailImagePaths();
+            if (previousDetailPaths != null && !previousDetailPaths.isBlank()) {
+                for (String item : previousDetailPaths.split(",")) {
+                    deleteImageIfLocal(item.trim());
+                }
+            }
+            String detailPaths = detailImages.stream()
+                    .filter(Objects::nonNull)
+                    .filter(file -> !file.isEmpty())
+                    .map(file -> saveImageFile(file, "details"))
+                    .collect(Collectors.joining(","));
+            record.setDetailImagePaths(trimToNull(detailPaths));
+        }
+
+        if (zipFile != null && !zipFile.isEmpty()) {
+            deleteZipIfLocal(record.getZipFilePath());
+            String[] fileInfo = saveZipFile(zipFile);
+            record.setZipFileName(fileInfo[0]);
+            record.setZipFilePath(fileInfo[1]);
+        }
+
+        record.setUpdatedAt(Instant.now());
+        record.setCreatedBy(admin.getId());
+
+        return productRecordRepository.save(record);
+    }
+
     private String[] saveZipFile(MultipartFile zipFile) {
         String originalName = zipFile.getOriginalFilename() == null ? "product.zip" : zipFile.getOriginalFilename();
         String lowercaseName = originalName.toLowerCase(Locale.ROOT);
@@ -176,6 +297,66 @@ public class AdminProductService {
             return new String[]{originalName, destination.toString()};
         } catch (IOException ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Khong the luu file zip", ex);
+        }
+    }
+
+    private String saveImageFile(MultipartFile imageFile, String subDir) {
+        String originalName = imageFile.getOriginalFilename() == null ? "image" : imageFile.getOriginalFilename();
+        String cleanName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
+        String extension = "";
+        int dotIndex = cleanName.lastIndexOf('.');
+        if (dotIndex >= 0) {
+            extension = cleanName.substring(dotIndex + 1).toLowerCase(Locale.ROOT);
+        }
+
+        if (!ALLOWED_IMAGE_EXTENSIONS.contains(extension)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chi ho tro file anh JPG/PNG/WebP");
+        }
+
+        String storedName = UUID.randomUUID() + "-" + cleanName;
+
+        try {
+            Path storageDir = Paths.get(productUploadDir, subDir).toAbsolutePath().normalize();
+            Files.createDirectories(storageDir);
+            Path destination = storageDir.resolve(storedName).normalize();
+            if (!destination.startsWith(storageDir)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ten file khong hop le");
+            }
+            imageFile.transferTo(destination);
+            return "/uploads/products/" + subDir + "/" + storedName;
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Khong the luu file anh", ex);
+        }
+    }
+
+    private void deleteImageIfLocal(String pathValue) {
+        if (pathValue == null || pathValue.isBlank()) {
+            return;
+        }
+        if (pathValue.startsWith("asset:")) {
+            return;
+        }
+        if (!pathValue.startsWith("/uploads/")) {
+            return;
+        }
+        String relativePath = pathValue.replaceFirst("^/", "");
+        try {
+            Path filePath = Paths.get(relativePath).toAbsolutePath().normalize();
+            Files.deleteIfExists(filePath);
+        } catch (IOException ignored) {
+            // Ignore delete errors for images.
+        }
+    }
+
+    private void deleteZipIfLocal(String pathValue) {
+        if (pathValue == null || pathValue.isBlank()) {
+            return;
+        }
+        try {
+            Path filePath = Paths.get(pathValue).toAbsolutePath().normalize();
+            Files.deleteIfExists(filePath);
+        } catch (IOException ignored) {
+            // Ignore delete errors for zip files.
         }
     }
 

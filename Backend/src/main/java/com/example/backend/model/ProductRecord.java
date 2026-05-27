@@ -35,6 +35,12 @@ public class ProductRecord {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "cover_image_path", length = 500)
+    private String coverImagePath;
+
+    @Column(name = "detail_image_paths", columnDefinition = "TEXT")
+    private String detailImagePaths;
+
     @Column(name = "zip_file_name", length = 255)
     private String zipFileName;
 
@@ -112,6 +118,22 @@ public class ProductRecord {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getCoverImagePath() {
+        return coverImagePath;
+    }
+
+    public void setCoverImagePath(String coverImagePath) {
+        this.coverImagePath = coverImagePath;
+    }
+
+    public String getDetailImagePaths() {
+        return detailImagePaths;
+    }
+
+    public void setDetailImagePaths(String detailImagePaths) {
+        this.detailImagePaths = detailImagePaths;
     }
 
     public String getZipFileName() {

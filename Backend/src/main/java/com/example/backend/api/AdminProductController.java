@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -48,7 +49,9 @@ public class AdminProductController {
             @RequestParam(required = false) String techStack,
             @RequestParam(required = false) String repository,
             @RequestParam(required = false) String description,
-            @RequestParam(required = false) MultipartFile zipFile
+            @RequestParam(required = false) MultipartFile zipFile,
+            @RequestParam(required = false) MultipartFile coverImage,
+            @RequestParam(required = false) List<MultipartFile> detailImages
     ) {
         UserAccount user = authService.getRequiredUser(authorization);
         requireAdmin(user);
@@ -61,7 +64,43 @@ public class AdminProductController {
                 techStack,
                 repository,
                 description,
-                zipFile
+            zipFile,
+            coverImage,
+            detailImages
+        );
+
+        return Map.of("success", true, "product", product);
+    }
+
+    @PatchMapping(value = "/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Map<String, Object> updateProduct(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable String productId,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) Double price,
+            @RequestParam(required = false) String categoryId,
+            @RequestParam(required = false) String techStack,
+            @RequestParam(required = false) String repository,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) MultipartFile zipFile,
+            @RequestParam(required = false) MultipartFile coverImage,
+            @RequestParam(required = false) List<MultipartFile> detailImages
+    ) {
+        UserAccount user = authService.getRequiredUser(authorization);
+        requireAdmin(user);
+
+        ProductRecord product = adminProductService.updateProduct(
+                user,
+                productId,
+                title,
+                price,
+                categoryId,
+                techStack,
+                repository,
+                description,
+                zipFile,
+                coverImage,
+                detailImages
         );
 
         return Map.of("success", true, "product", product);
