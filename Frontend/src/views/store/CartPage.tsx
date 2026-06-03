@@ -180,7 +180,7 @@ function CartPage() {
         <div className="page-header page-header-small">
           <div
             className="page-header-image"
-            style={{ backgroundImage: "url(" + require("assets/img/bg8.jpg") + ")" }}
+style={{ backgroundImage: `url(${bg8})` }}
           ></div>
           <div className="content-center">
             <Container fluid className="catalog-container">

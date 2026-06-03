@@ -83,27 +83,30 @@ public class AdminProductService {
 
         productRecordRepository.delete(product);
 
-        if (zipPath == null || zipPath.isBlank()) {
-            return;
-        }
-
-        try {
-            Path filePath = Paths.get(zipPath).toAbsolutePath().normalize();
-            // If file deletion fails, throw to trigger transaction rollback
-            boolean deleted = Files.deleteIfExists(filePath);
-            if (!deleted && Files.exists(filePath)) {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Khong the xoa file zip cua san pham");
+    // Register synchronization to delete files after successful commit
+    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCompletion(int status) {
+            if (status == STATUS_COMMITTED) {
+                // Delete zip file if exists
+                if (zipPath != null && !zipPath.isBlank()) {
+                    try {
+                        Path filePath = Paths.get(zipPath).toAbsolutePath().normalize();
+                        Files.deleteIfExists(filePath);
+                    } catch (IOException ignored) {
+                    }
+                }
+                // Delete cover image
+                deleteImageIfLocal(coverPath);
+                // Delete detail images
+                if (detailPaths != null && !detailPaths.isBlank()) {
+                    for (String item : detailPaths.split(",")) {
+                        deleteImageIfLocal(item.trim());
+                    }
+                }
             }
-        } catch (IOException ex) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Khong the xoa file zip cua san pham", ex);
         }
-
-        deleteImageIfLocal(coverPath);
-        if (detailPaths != null && !detailPaths.isBlank()) {
-            for (String item : detailPaths.split(",")) {
-                deleteImageIfLocal(item.trim());
-            }
-        }
+    });
     }
 
         @Transactional
@@ -264,10 +267,32 @@ public class AdminProductService {
         }
 
         if (zipFile != null && !zipFile.isEmpty()) {
-            deleteZipIfLocal(record.getZipFilePath());
+            // Save old zip path before replacing
+            String oldZipPath = record.getZipFilePath();
+
             String[] fileInfo = saveZipFile(zipFile);
-            record.setZipFileName(fileInfo[0]);
-            record.setZipFilePath(fileInfo[1]);
+            String savedName = fileInfo[0];
+            String savedPath = fileInfo[1];
+
+            // Register a synchronization to delete the new file if transaction rolls back
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCompletion(int status) {
+                    if (status == STATUS_ROLLED_BACK) {
+                        try {
+                            Files.deleteIfExists(Paths.get(savedPath));
+                        } catch (IOException ignored) {
+                        }
+                    }
+                }
+            });
+
+            record.setZipFileName(savedName);
+            record.setZipFilePath(savedPath);
+            // Delete old zip after new one is saved successfully
+            if (oldZipPath != null && !oldZipPath.isBlank()) {
+                deleteZipIfLocal(oldZipPath);
+            }
         }
 
         record.setUpdatedAt(Instant.now());
@@ -339,9 +364,10 @@ public class AdminProductService {
         if (!pathValue.startsWith("/uploads/")) {
             return;
         }
-        String relativePath = pathValue.replaceFirst("^/", "");
+        // Remove leading slash and resolve relative to the configured upload directory.
+        String relativePath = pathValue.replaceFirst("^/uploads/", "");
         try {
-            Path filePath = Paths.get(relativePath).toAbsolutePath().normalize();
+            Path filePath = Paths.get(productUploadDir, relativePath).toAbsolutePath().normalize();
             Files.deleteIfExists(filePath);
         } catch (IOException ignored) {
             // Ignore delete errors for images.
