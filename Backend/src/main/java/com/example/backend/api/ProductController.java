@@ -7,6 +7,7 @@ import com.example.backend.service.AdminProductService;
 import com.example.backend.service.CommerceService;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -67,15 +68,23 @@ public class ProductController {
 
         try {
             Resource resource = new UrlResource(zipPath.toUri());
+            if (!resource.exists() || !resource.isReadable()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay file zip cua san pham");
+            }
+
             String fileName = product.getZipFileName() == null || product.getZipFileName().isBlank()
-                    ? product.getSlug() + ".zip"
-                    : product.getZipFileName();
+                ? product.getSlug() + ".zip"
+                : product.getZipFileName();
+
+            ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(fileName)
+                .build();
 
             return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .contentLength(java.nio.file.Files.size(zipPath))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-                    .body(resource);
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(java.nio.file.Files.size(zipPath))
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+                .body(resource);
         } catch (IOException ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Khong the tai file san pham", ex);
         }
