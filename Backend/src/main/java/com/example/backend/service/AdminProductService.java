@@ -66,12 +66,42 @@ public class AdminProductService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "San pham nay chua co file zip de tai");
         }
 
+        // Try direct path
         Path filePath = Paths.get(zipPath).toAbsolutePath().normalize();
-        if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay file zip cua san pham");
+        if (Files.exists(filePath) && Files.isRegularFile(filePath)) {
+            return filePath;
         }
 
-        return filePath;
+        // Try under configured upload dir (uploads/products/...)
+        try {
+            Path underUpload = Paths.get(productUploadDir).resolve(zipPath).toAbsolutePath().normalize();
+            if (Files.exists(underUpload) && Files.isRegularFile(underUpload)) {
+                return underUpload;
+            }
+        } catch (Exception ignored) {
+        }
+
+        // Try resolving relative to project parent (e.g., Frontend is sibling to Backend)
+        try {
+            Path parentResolved = Paths.get("..").resolve(zipPath).toAbsolutePath().normalize();
+            if (Files.exists(parentResolved) && Files.isRegularFile(parentResolved)) {
+                return parentResolved;
+            }
+        } catch (Exception ignored) {
+        }
+
+        // Last attempt: if path looks like a frontend asset, try ../Frontend/<rest>
+        try {
+            if (zipPath.startsWith("Frontend") || zipPath.contains("src/assets")) {
+                Path alt = Paths.get("..", zipPath).toAbsolutePath().normalize();
+                if (Files.exists(alt) && Files.isRegularFile(alt)) {
+                    return alt;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay file zip cua san pham");
     }
 
     @Transactional
