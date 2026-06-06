@@ -15,6 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.example.backend.model.DiscountCode;
+import com.example.backend.api.dto.ValidateDiscountResponse;
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Optional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +30,7 @@ public class CommerceService {
     private final CartItemRepository cartItemRepository;
     private final OrderRecordRepository orderRecordRepository;
     private final ReviewRecordRepository reviewRecordRepository;
+    private final java.util.List<DiscountCode> builtInDiscounts;
 
     public CommerceService(
             CartItemRepository cartItemRepository,
@@ -34,6 +40,43 @@ public class CommerceService {
         this.cartItemRepository = cartItemRepository;
         this.orderRecordRepository = orderRecordRepository;
         this.reviewRecordRepository = reviewRecordRepository;
+        this.builtInDiscounts = Arrays.asList(
+                new DiscountCode("GIAM10", "percentage", 10.0, 0.0, LocalDate.parse("2026-12-31"), true, "Giảm 10% cho tất cả đơn hàng"),
+                new DiscountCode("GIAM50K", "fixed", 50.0, 100.0, LocalDate.parse("2026-12-31"), true, "Giảm $50 cho đơn từ $100"),
+                new DiscountCode("NEWUSER", "percentage", 15.0, 0.0, LocalDate.parse("2026-12-31"), true, "Giảm 15% cho người dùng mới"),
+                new DiscountCode("FREESHIP", "fixed", 20.0, 50.0, LocalDate.parse("2025-06-30"), false, "Giảm $20 (đã hết hạn)")
+        );
+    }
+
+    public ValidateDiscountResponse validateDiscountCode(String code, double orderTotal) {
+        if (code == null || code.isBlank()) {
+            return new ValidateDiscountResponse(false, 0.0, "Mã không hợp lệ", null);
+        }
+        Optional<DiscountCode> found = builtInDiscounts.stream()
+                .filter(d -> d.getCode().equalsIgnoreCase(code.trim()))
+                .findFirst();
+        if (found.isEmpty()) {
+            return new ValidateDiscountResponse(false, 0.0, "Mã giảm giá không tồn tại", null);
+        }
+        DiscountCode d = found.get();
+        if (!d.isActive()) {
+            return new ValidateDiscountResponse(false, 0.0, "Mã giảm giá đã hết hiệu lực", d);
+        }
+        if (LocalDate.now().isAfter(d.getExpiryDate())) {
+            return new ValidateDiscountResponse(false, 0.0, "Mã giảm giá đã hết hạn", d);
+        }
+        if (orderTotal < d.getMinOrder()) {
+            return new ValidateDiscountResponse(false, 0.0, String.format("Đơn hàng tối thiểu $%.2f để sử dụng mã này", d.getMinOrder()), d);
+        }
+
+        double discountAmount = 0.0;
+        if ("percentage".equalsIgnoreCase(d.getType())) {
+            discountAmount = (orderTotal * d.getValue()) / 100.0;
+        } else {
+            discountAmount = Math.min(d.getValue(), orderTotal);
+        }
+
+        return new ValidateDiscountResponse(true, discountAmount, d.getDescription(), d);
     }
 
     public List<CartItem> getCart(UserAccount user) {
