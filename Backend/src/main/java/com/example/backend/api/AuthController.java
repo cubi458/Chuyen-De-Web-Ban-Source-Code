@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.Map;
 
 @RestController
+@org.springframework.validation.annotation.Validated
 @RequestMapping("/api/auth")
 public class AuthController {
     private final AuthService authService;

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@org.springframework.validation.annotation.Validated
 @RequestMapping("/api/admin/products")
 public class AdminProductController {
     private final AuthService authService;
