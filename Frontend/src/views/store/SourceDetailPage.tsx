@@ -17,8 +17,8 @@ import StoreNavbar from "components/Navbars/StoreNavbar";
 import StoreFooter from "components/Footers/StoreFooter";
 import ReviewSection from "components/Reviews/ReviewSection";
 import { apiRequest } from "lib/api";
-import { resolveCoverImage, resolveDetailImages } from "lib/productImages";
 import { useCart } from "context/CartContext";
+import valueIllustration from "assets/img/Trang nen, anh gioi thieu, quang cao/top-code.jpg";
 
 type ProductDetail = {
   id: string;
@@ -29,8 +29,6 @@ type ProductDetail = {
   techStack?: string;
   repository?: string;
   description?: string;
-  coverImagePath?: string;
-  detailImagePaths?: string;
   zipFileName?: string;
   createdAt?: string;
 };
@@ -42,15 +40,6 @@ const categoryNameMap: Record<string, string> = {
   utility: "Công cụ & Automation",
   food: "F&B Experience",
   ai: "Creative AI",
-};
-
-const coverImageByCategory: Record<string, string> = {
-  commerce: require("assets/img/SourceCode Anh/source1.jpg"),
-  portal: require("assets/img/SourceCode Anh/source2.jpg"),
-  management: require("assets/img/SourceCode Anh/source3.jpg"),
-  utility: require("assets/img/SourceCode Anh/source4.jpg"),
-  food: require("assets/img/SourceCode Anh/source5.jpg"),
-  ai: require("assets/img/SourceCode Anh/source6.jpg"),
 };
 
 function SourceDetailPage() {
@@ -151,26 +140,6 @@ function SourceDetailPage() {
     return info;
   }, [product]);
 
-  const coverImage = React.useMemo(() => {
-    if (!product) {
-      return null;
-    }
-    return resolveCoverImage(
-      product.coverImagePath,
-      coverImageByCategory[product.categoryId] ||
-        require("assets/img/SourceCode Anh/source7.jpg")
-    );
-  }, [product]);
-
-  const detailImages = React.useMemo(() => {
-    if (!product) {
-      return [] as string[];
-    }
-    return resolveDetailImages(product.detailImagePaths);
-  }, [product]);
-
-  const heroImage = detailImages[0] || coverImage || require("assets/img/SourceCode Anh/source7.jpg");
-
   if (loading) {
     return (
       <>
@@ -214,7 +183,7 @@ function SourceDetailPage() {
           <div
             className="page-header-image"
             style={{
-              backgroundImage: `url(${heroImage})`,
+              backgroundImage: `url(${valueIllustration})`,
               filter: "brightness(0.4)",
             }}
           ></div>
@@ -236,14 +205,14 @@ function SourceDetailPage() {
                   <div className="text-warning h3 mb-0">${product.price}</div>
                 </Col>
                 <Col md="4" className="text-md-right text-center">
-                  <Button color="info" size="lg" className="mr-2">
-                    Mua ngay
-                  </Button>
-                  <Button color="neutral" outline size="lg" tag={Link} to="/store/catalog">
-                    Trở lại danh mục
-                  </Button>
-                  <div className="mt-3">
-                    <Button color="primary" onClick={handleAddToCart}>
+                  <div className="detail-cta-group">
+                    <Button color="info" size="lg">
+                      Mua ngay
+                    </Button>
+                    <Button color="neutral" outline size="lg" tag={Link} to="/store/catalog">
+                      Trở lại danh mục
+                    </Button>
+                    <Button color="primary" size="lg" onClick={handleAddToCart}>
                       + Thêm sản phẩm
                     </Button>
                   </div>
@@ -273,7 +242,7 @@ function SourceDetailPage() {
                   <CardBody>
                     <img
                       alt={product.title}
-                      src={heroImage}
+                      src={valueIllustration}
                       className="img-raised rounded img-fluid"
                     />
                   </CardBody>

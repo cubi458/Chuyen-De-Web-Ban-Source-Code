@@ -57,7 +57,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const response = await apiRequest<{ success: boolean; message: string; items: CartItem[] }>(
-      "/cart/add",
+      "/cart/items",
       {
         method: "POST",
         body: JSON.stringify({ productId }),
@@ -76,7 +76,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     const next = await apiRequest<CartItem[]>(
-      `/cart/${itemId}/quantity`,
+      `/cart/items/${itemId}`,
       {
         method: "PATCH",
         body: JSON.stringify({ delta }),

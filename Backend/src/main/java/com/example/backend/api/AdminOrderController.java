@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import jakarta.validation.Valid;
+import com.example.backend.api.dto.UpdateOrderStatusRequest;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@org.springframework.validation.annotation.Validated
 @RequestMapping("/api/admin/orders")
 public class AdminOrderController {
     private final AuthService authService;
@@ -38,13 +41,13 @@ public class AdminOrderController {
     @PatchMapping("/{orderId}/status")
     public OrderRecord updateStatus(
             @RequestHeader("Authorization") String authorization,
-            @PathVariable String orderId,
-            @RequestBody Map<String, String> payload
+            @PathVariable("orderId") String orderId,
+            @Valid @RequestBody UpdateOrderStatusRequest request
     ) {
         UserAccount user = authService.getRequiredUser(authorization);
         requireAdmin(user);
 
-        String status = payload.get("status");
+        String status = request.getStatus();
         if (status == null || status.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status khong hop le");
         }

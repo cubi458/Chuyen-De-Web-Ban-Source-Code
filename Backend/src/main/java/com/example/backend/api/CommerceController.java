@@ -24,8 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import com.example.backend.api.dto.ValidateDiscountRequest;
+import com.example.backend.api.dto.ValidateDiscountResponse;
 
 @RestController
+@org.springframework.validation.annotation.Validated
 @RequestMapping("/api")
 public class CommerceController {
     private final AuthService authService;
@@ -42,7 +45,7 @@ public class CommerceController {
         return commerceService.getCart(user);
     }
 
-    @PostMapping("/cart/add")
+    @PostMapping("/cart/items")
     public Map<String, Object> addToCart(
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody CartAddRequest request
@@ -56,7 +59,7 @@ public class CommerceController {
         );
     }
 
-    @PatchMapping("/cart/{itemId}/quantity")
+    @PatchMapping("/cart/items/{itemId}")
     public List<CartItem> updateQuantity(
             @RequestHeader("Authorization") String authorization,
             @PathVariable String itemId,
@@ -66,7 +69,7 @@ public class CommerceController {
         return commerceService.updateQuantity(user, itemId, request.getDelta());
     }
 
-    @DeleteMapping("/cart/{itemId}")
+    @DeleteMapping("/cart/items/{itemId}")
     public List<CartItem> removeItem(
             @RequestHeader("Authorization") String authorization,
             @PathVariable String itemId
@@ -88,6 +91,15 @@ public class CommerceController {
     ) {
         UserAccount user = authService.getRequiredUser(authorization);
         return commerceService.createOrder(user, request);
+    }
+
+    @PostMapping("/discounts/validate")
+    public ValidateDiscountResponse validateDiscount(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody ValidateDiscountRequest request
+    ) {
+        // no auth required to validate, but user may be present in header for future rules
+        return commerceService.validateDiscountCode(request.getCode(), request.getSubtotal());
     }
 
     @GetMapping("/reviews")

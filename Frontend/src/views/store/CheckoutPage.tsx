@@ -44,6 +44,8 @@ function CheckoutPage() {
 
   const discountCode = (location.state as any)?.discountCode || "";
   const discountAmount = (location.state as any)?.discountAmount || 0;
+  const passedSubtotal = (location.state as any)?.subtotal;
+  const passedTotal = (location.state as any)?.total;
 
   const [buyer, setBuyer] = React.useState({
     fullName: user?.displayName || "",
@@ -79,7 +81,9 @@ function CheckoutPage() {
     return product ? sum + product.price : sum;
   }, 0);
 
-  const total = Math.max(0, subtotal - discountAmount);
+  const total = typeof passedTotal === "number"
+    ? passedTotal
+    : Math.max(0, subtotal - discountAmount);
 
   const handleSubmitOrder = async () => {
     if (!user) {
@@ -99,8 +103,22 @@ function CheckoutPage() {
 
     setSubmitting(true);
     try {
+      // Try to fetch product data from API so we can store titles/prices reliably
+      let dbProductMap: Record<string, { id: string; title: string; price: number }> = {};
+      try {
+        const dbProducts = await (await import("lib/api")).apiRequest<any[]>("/products", { method: "GET" }, false);
+        dbProductMap = (dbProducts || []).reduce<Record<string, { id: string; title: string; price: number }>>((acc, p) => {
+          if (p && p.id) acc[p.id] = { id: p.id, title: p.title || p.name || p.id, price: typeof p.price === "number" ? p.price : Number(p.price) || 0 };
+          return acc;
+        }, {});
+      } catch (e) {
+        // ignore API failure - we'll fallback to local catalog
+        dbProductMap = {};
+      }
+
       const orderItems: OrderItem[] = items.map((item) => {
-        const product = findProductById(item.productId);
+        const dbProduct = dbProductMap[item.productId];
+        const product = dbProduct ? dbProduct : findProductById(item.productId);
         return {
           productId: item.productId,
           productTitle: product?.title || item.productId,
