@@ -21,6 +21,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { user } = useAuth();
   const [items, setItems] = React.useState<CartItem[]>([]);
 
+  const normalizeCartItems = React.useCallback((list: CartItem[]) => {
+    const seen = new Map<string, CartItem>();
+    list
+      .filter((item) => item.quantity > 0)
+      .forEach((item) => {
+        if (!seen.has(item.productId)) {
+          seen.set(item.productId, { ...item, quantity: 1 });
+        }
+      });
+    return Array.from(seen.values());
+  }, []);
+
   React.useEffect(() => {
     const token = getToken();
     if (!user || !token) {
@@ -30,7 +42,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     apiRequest<CartItem[]>("/cart", { method: "GET" }, true)
       .then((list) => {
-        setItems(list.filter((item) => item.quantity > 0));
+        setItems(normalizeCartItems(list));
       })
       .catch((error) => {
         console.warn("Failed to load cart", error);
@@ -53,7 +65,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       true
     );
 
-    setItems(response.items);
+    setItems(normalizeCartItems(response.items));
 
     return { success: true, message: response.message || "Da them san pham vao gio hang." };
   }, []);
@@ -71,8 +83,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       },
       true
     );
-    setItems(next);
-  }, []);
+    setItems(normalizeCartItems(next));
+  }, [normalizeCartItems]);
 
   const removeItem = React.useCallback(async (itemId: string) => {
     const token = getToken();
@@ -80,8 +92,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     const next = await apiRequest<CartItem[]>(`/cart/${itemId}`, { method: "DELETE" }, true);
-    setItems(next);
-  }, []);
+    setItems(normalizeCartItems(next));
+  }, [normalizeCartItems]);
 
   const value = React.useMemo(
     () => ({ items, addToCart, updateQuantity, removeItem }),

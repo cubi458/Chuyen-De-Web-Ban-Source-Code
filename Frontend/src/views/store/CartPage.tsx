@@ -11,8 +11,6 @@ import {
   Container,
   FormGroup,
   Input,
-  InputGroup,
-  InputGroupAddon,
   ListGroup,
   ListGroupItem,
   Row,
@@ -44,7 +42,7 @@ type CartProduct = {
 };
 
 function CartPage() {
-  const { items, updateQuantity, removeItem } = useCart();
+  const { items, removeItem } = useCart();
   const [productsById, setProductsById] = React.useState<Record<string, CartProduct>>({});
   const [discountInput, setDiscountInput] = React.useState("");
   const [appliedDiscount, setAppliedDiscount] = React.useState<DiscountCode | null>(null);
@@ -107,7 +105,7 @@ function CartPage() {
 
   const subtotal = items.reduce((sum, item) => {
     const product = resolveProduct(item.productId);
-    return product ? sum + product.price * item.quantity : sum;
+    return product ? sum + product.price : sum;
   }, 0);
 
   const calculatedDiscount = appliedDiscount
@@ -148,6 +146,7 @@ function CartPage() {
               <Col md="8">
                 <h2 className="title">Giỏ hàng</h2>
                 <p className="category">Quản lý license trước khi thanh toán.</p>
+                <p className="text-muted small mb-0">Mỗi source chỉ cần thêm một lần vào giỏ; không dùng số lượng.</p>
               </Col>
               <Col
                 md="4"
@@ -181,7 +180,7 @@ function CartPage() {
                           <tr>
                             <th>Source code</th>
                             <th>License</th>
-                            <th>Số lượng</th>
+                            <th>Hành động</th>
                             <th className="text-right">Thành tiền</th>
                           </tr>
                         </thead>
@@ -205,27 +204,16 @@ function CartPage() {
                                   </div>
                                 </td>
                                 <td>
-                                  <div className="btn-group btn-group-sm" role="group">
-                                    <Button color="default" onClick={() => updateQuantity(item.id, -1)}>
-                                      -
-                                    </Button>
-                                    <Button color="default" disabled>
-                                      {item.quantity}
-                                    </Button>
-                                    <Button color="default" onClick={() => updateQuantity(item.id, 1)}>
-                                      +
-                                    </Button>
-                                  </div>
                                   <Button
                                     color="link"
-                                    className="d-block mt-1 text-danger p-0"
+                                    className="text-danger p-0"
                                     onClick={() => removeItem(item.id)}
                                   >
                                     Xóa
                                   </Button>
                                 </td>
                                 <td className="text-right">
-                                  <strong>${(product?.price || 0) * item.quantity}</strong>
+                                  <strong>${product?.price || 0}</strong>
                                 </td>
                               </tr>
                             );
@@ -299,21 +287,19 @@ function CartPage() {
                     ) : (
                       <>
                         <FormGroup className="mb-3">
-                          <InputGroup>
+                          <div className="d-flex">
                             <Input
                               placeholder="Nhập mã giảm giá..."
                               value={discountInput}
                               onChange={(e) => setDiscountInput(e.target.value)}
                               onKeyPress={(e) => e.key === "Enter" && handleApplyDiscount()}
-                              className="border-right-0"
+                              className="flex-grow-1 mr-2"
                             />
-                            <InputGroupAddon addonType="append">
-                              <Button color="primary" onClick={handleApplyDiscount}>
-                                <i className="now-ui-icons ui-1_check mr-1"></i>
-                                Áp dụng
-                              </Button>
-                            </InputGroupAddon>
-                          </InputGroup>
+                            <Button color="primary" onClick={handleApplyDiscount}>
+                              <i className="now-ui-icons ui-1_check mr-1"></i>
+                              Áp dụng
+                            </Button>
+                          </div>
                         </FormGroup>
 
                         {/* Available Codes Preview */}

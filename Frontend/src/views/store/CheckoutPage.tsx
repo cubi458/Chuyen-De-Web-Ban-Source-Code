@@ -76,7 +76,7 @@ function CheckoutPage() {
 
   const subtotal = items.reduce((sum, item) => {
     const product = findProductById(item.productId);
-    return product ? sum + product.price * item.quantity : sum;
+    return product ? sum + product.price : sum;
   }, 0);
 
   const total = Math.max(0, subtotal - discountAmount);
@@ -105,7 +105,7 @@ function CheckoutPage() {
           productId: item.productId,
           productTitle: product?.title || item.productId,
           price: product?.price || 0,
-          quantity: item.quantity,
+          quantity: 1,
           license: item.license,
         };
       });
@@ -300,7 +300,7 @@ function CheckoutPage() {
                                   License: {item.license}
                                 </div>
                               </div>
-                              <div>${product.price * item.quantity}</div>
+                              <div>${product.price}</div>
                             </div>
                           </ListGroupItem>
                         );

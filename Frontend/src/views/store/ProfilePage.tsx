@@ -283,7 +283,7 @@ function ProfilePage() {
                                                             <td>
                                                                 {order.items.slice(0, 2).map((item) => (
                                                                     <div key={item.productId} className="small">
-                                                                        {item.productTitle} x{item.quantity}
+                                                                        {item.productTitle}
                                                                     </div>
                                                                 ))}
                                                                 {order.items.length > 2 && (
@@ -359,7 +359,7 @@ function ProfilePage() {
                                         <tr>
                                             <th>Tên sản phẩm</th>
                                             <th>License</th>
-                                            <th>Số lượng</th>
+                                            <th>License</th>
                                             <th className="text-right">Giá</th>
                                         </tr>
                                     </thead>
@@ -368,8 +368,8 @@ function ProfilePage() {
                                             <tr key={item.productId}>
                                                 <td>{item.productTitle}</td>
                                                 <td><Badge color="info">{item.license}</Badge></td>
-                                                <td>{item.quantity}</td>
-                                                <td className="text-right">${item.price * item.quantity}</td>
+                                                <td>{item.license}</td>
+                                                <td className="text-right">${item.price}</td>
                                             </tr>
                                         ))}
                                     </tbody>
