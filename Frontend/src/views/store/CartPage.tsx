@@ -18,6 +18,7 @@ import {
 } from "reactstrap";
 import StoreNavbar from "components/Navbars/StoreNavbar";
 import StoreFooter from "components/Footers/StoreFooter";
+import bg8 from "assets/img/bg8.jpg";
 import { findProductById } from "data/sourceCatalog";
 import { useCart } from "context/CartContext";
 import { apiRequest } from "lib/api";

@@ -23,6 +23,7 @@ import {
   findProductById,
   paymentMethods,
 } from "data/sourceCatalog";
+import { apiRequest } from "lib/api";
 import { useCart } from "context/CartContext";
 import { useAuth } from "context/AuthContext";
 import { useOrders, OrderItem } from "context/OrderContext";
@@ -106,9 +107,9 @@ function CheckoutPage() {
       // Try to fetch product data from API so we can store titles/prices reliably
       let dbProductMap: Record<string, { id: string; title: string; price: number }> = {};
       try {
-        const dbProducts = await (await import("lib/api")).apiRequest<any[]>("/products", { method: "GET" }, false);
+        const dbProducts = await apiRequest<any[]>('/products', { method: 'GET' }, false);
         dbProductMap = (dbProducts || []).reduce<Record<string, { id: string; title: string; price: number }>>((acc, p) => {
-          if (p && p.id) acc[p.id] = { id: p.id, title: p.title || p.name || p.id, price: typeof p.price === "number" ? p.price : Number(p.price) || 0 };
+          if (p && p.id) acc[p.id] = { id: p.id, title: p.title || p.name || p.id, price: typeof p.price === 'number' ? p.price : Number(p.price) || 0 };
           return acc;
         }, {});
       } catch (e) {
