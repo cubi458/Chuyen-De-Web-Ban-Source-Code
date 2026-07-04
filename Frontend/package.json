@@ -2,7 +2,6 @@
   "name": "now-ui-kit-react",
   "version": "1.5.2",
   "private": true,
-  "homepage": "https://cubi458.github.io/Chuyen-De-Web-Ban-Source-Code",
   "dependencies": {
     "ajv": "^8.17.1",
     "bootstrap": "^4.6.2",
@@ -22,8 +21,6 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
     "install:clean": "rm -rf node_modules/ && rm -rf package-lock.json && npm install && npm start",
     "compile-sass": "sass src/assets/scss/now-ui-kit.scss src/assets/css/now-ui-kit.css",
     "minify-sass": "sass src/assets/scss/now-ui-kit.scss src/assets/css/now-ui-kit.min.css --style compressed"
