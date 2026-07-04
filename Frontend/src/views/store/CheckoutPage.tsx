@@ -76,12 +76,10 @@ function CheckoutPage() {
     }
   }, [user]);
 
-  const subtotal = typeof passedSubtotal === "number"
-    ? passedSubtotal
-    : items.reduce((sum, item) => {
-        const product = findProductById(item.productId);
-        return product ? sum + product.price * item.quantity : sum;
-      }, 0);
+  const subtotal = items.reduce((sum, item) => {
+    const product = findProductById(item.productId);
+    return product ? sum + product.price : sum;
+  }, 0);
 
   const total = typeof passedTotal === "number"
     ? passedTotal
@@ -123,9 +121,9 @@ function CheckoutPage() {
         const product = dbProduct ? dbProduct : findProductById(item.productId);
         return {
           productId: item.productId,
-          productTitle: product ? (product.title || (product as any).name || item.productId) : item.productId,
-          price: product ? (product.price as number) || 0 : 0,
-          quantity: item.quantity,
+          productTitle: product?.title || item.productId,
+          price: product?.price || 0,
+          quantity: 1,
           license: item.license,
         };
       });
@@ -320,7 +318,7 @@ function CheckoutPage() {
                                   License: {item.license}
                                 </div>
                               </div>
-                              <div>${product.price * item.quantity}</div>
+                              <div>${product.price}</div>
                             </div>
                           </ListGroupItem>
                         );

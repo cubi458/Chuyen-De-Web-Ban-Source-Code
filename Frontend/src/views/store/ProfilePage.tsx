@@ -284,7 +284,7 @@ function ProfilePage() {
                                                             <td>
                                                                 {order.items.slice(0, 2).map((item) => (
                                                                     <div key={item.productId} className="small">
-                                                                        {item.productTitle} x{item.quantity}
+                                                                        {item.productTitle}
                                                                     </div>
                                                                 ))}
                                                                 {order.items.length > 2 && (
@@ -360,27 +360,19 @@ function ProfilePage() {
                                         <tr>
                                             <th>Tên sản phẩm</th>
                                             <th>License</th>
-                                            <th>Số lượng</th>
+                                            <th>License</th>
                                             <th className="text-right">Giá</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {selectedOrder.items.map((item) => {
-                                            const resolved = (() => {
-                                                const fallback = findProductById(item.productId);
-                                                const title = item.productTitle && item.productTitle !== item.productId ? item.productTitle : (fallback ? fallback.title : item.productId);
-                                                const price = (typeof item.price === 'number' && item.price > 0) ? item.price : (fallback ? (fallback.price as number) || 0 : 0);
-                                                return { title, price };
-                                            })();
-                                            return (
-                                                <tr key={item.productId}>
-                                                    <td>{resolved.title}</td>
-                                                    <td><Badge color="info">{item.license}</Badge></td>
-                                                    <td>{item.quantity}</td>
-                                                    <td className="text-right">${(resolved.price * item.quantity).toFixed(2)}</td>
-                                                </tr>
-                                            );
-                                        })}
+                                        {selectedOrder.items.map((item) => (
+                                            <tr key={item.productId}>
+                                                <td>{item.productTitle}</td>
+                                                <td><Badge color="info">{item.license}</Badge></td>
+                                                <td>{item.license}</td>
+                                                <td className="text-right">${item.price}</td>
+                                            </tr>
+                                        ))}
                                     </tbody>
                                     <tfoot>
                                         {(() => {
